@@ -156,18 +156,26 @@ JU_API int  (ju_start) (ju_ctx_t*, ju_process_func_t);
 JU_API void (ju_stop)  (ju_ctx_t*);
 
 /*
+ * Checks is server online, and we have connection.
+ *
+ * @arg context
+ * @arg timeout in MILLISeconds to wait (-1 forever, 0 - no sleep)
+ */
+JU_API int (ju_is_online) (ju_ctx_t* x, int sec); 
+
+/*
  * You should call this after proper initialization and setup!
  * It will enter in loop, that will works until Jack server will be closed,
  * or Window will be closed (if enabled).
  *
  * If enabed, this loop will handle window process and redraw events.
- * If disabled, works same as ju_sleep()
- * TODO : allow call redraw_callback even if window is not created!
+ * If disabled, works same as while(ju_is_online(x, time)) {func(x);}
  *
  * @arg context
- * @arg (optional) redraw_callback
+ * @arg callback, runned in loop (optional for redraw)
+ * @arg MILLIseconds await before new loop (-1 for forever, 0 for no wait)
  */
-JU_API void (ju_loop) (ju_ctx_t* x, void (*) (ju_ctx_t*)); 
+JU_API void (ju_loop) (ju_ctx_t* x, void (*) (ju_ctx_t*), int); 
 
 /*
  * You should call this after initialization and ju_start().
@@ -177,6 +185,8 @@ JU_API void (ju_loop) (ju_ctx_t* x, void (*) (ju_ctx_t*));
  *
  * @ret if this function returns - connection with server is lost
  * by any reason. You still need to call ju_uninit() after this.
+ *
+ * Compability function. Replace it with ju_is_online(x, -1) if possible;
  */
 JU_API void (ju_wait) (ju_ctx_t* x);
 

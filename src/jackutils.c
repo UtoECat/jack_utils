@@ -22,7 +22,7 @@ struct ju_ctx_s {
 	ju_cstr_t name;
 	GLFWwindow* win; 
 	// helpers mutex :p
-	mtx_t mutex, works;
+	mtx_t mutex, works, mdata;
 	ju_process_func_t proc_cb;
 	size_t length;
 	void *udata;
@@ -40,19 +40,24 @@ static int is_input(ju_ctx_t* x, int p) {
 	jack_port_t* r = get_port(x, p);
 	return r ? jack_port_flags(r) & JackPortIsInput : -1;	
 }
-// TODO : add latency support
+
+// Buffer resize callback
+
+static int (ju_bscb)(jack_nframes_t new, void* p) {
+	ju_ctx_t* x = (ju_ctx_t*) p;
+	// mutex is important for keep bufflen same!
+	mtx_lock(&x->mdata);
+	x->length = new;
+	mtx_unlock(&x->mdata);
+}
+
+// TODO : add latency support?
 static int ju_process(jack_nframes_t len, void* arg) {
 	ju_ctx_t* x = (ju_ctx_t*) arg;
-	assert(arg);
-	x->length = len;
-#ifndef NDEBUG
+
 	mtx_lock(&x->mutex);
-	assert(x->proc_cb);
 	x->proc_cb(x, len);
 	mtx_unlock(&x->mutex);
-#else
-	x->proc_cb(x, len);
-#endif
 	return 0;
 }
 
@@ -89,19 +94,26 @@ JU_API ju_ctx_t* (ju_ctx_init)  (ju_cstr_t name, ju_cstr_t server) {
 	p->name = name;
 	mtx_init(&p->mutex, 0);
 	mtx_init(&p->works, 0);
+	mtx_init(&p->mdata, 0);
+	p->length = jack_get_buffer_size(p->client);
+
 	jack_set_process_callback(p->client, ju_process, p);
 	jack_on_shutdown(p->client, ju_shutdown, p);	
+	jack_set_buffer_size_callback(p->client, ju_bscb, p);
 	return p;
 }
 JU_API void (ju_ctx_unint) (ju_ctx_t* p) {
 	jack_deactivate(p->client);
 	for (int i = 0; i <= p->last_port; i++) {
-		if (p->ports[i]) jack_port_unregister(p->client, p->ports[i]);
+		if (p->ports[i] && jack_port_is_mine(
+				p->client, p->ports[i]
+			)) jack_port_unregister(p->client, p->ports[i]);
 		p->ports[i] = NULL;
 	}
 	jack_client_close(p->client);
 	if (p->win) glfwDestroyWindow(p->win);
 	mtx_destroy(&p->mutex);
+	mtx_destroy(&p->mdata);
 	mtx_destroy(&p->works);
 	free(p);
 }
@@ -178,17 +190,37 @@ JU_API void (ju_stop)  (ju_ctx_t* x) {
 	jack_deactivate(x->client);
 }
 
-JU_API void (ju_wait) (ju_ctx_t* x, void (*draw_cb) (ju_ctx_t*)) {
+#include <unistd.h> // usleep
+
+JU_API int (ju_is_online) (ju_ctx_t* x, int msec) {
+	int i = 0;
+	
+	if (msec >= 0) {
+		i = mtx_trylock(&x->works);
+		usleep(msec ? msec : 1);
+	} else {
+		i = mtx_lock(&x->works);
+	};
+	
+	if (!i) mtx_unlock(&x->works);
+	return i;
+}
+
+JU_API void (ju_loop) (ju_ctx_t* x, void (*loop_cb) (ju_ctx_t*), int ti) {
 	if (x->win) {
-		glfwMakeContextCurrent(x->win);
-		while(!glfwWindowShouldClose(x->win)) {
-			if (draw_cb) draw_cb(x);
-			glfwPollEvents();
+		while(!glfwWindowShouldClose(x->win) && ju_is_online(x, ti)) {
+			if (loop_cb) loop_cb(x);
 		}
 	} else {
-		mtx_lock(&x->works);
+		while (ju_is_online(x, ti)) {
+			if (loop_cb) loop_cb(x);
+		}
 	}
-}	
+}
+
+JU_API void (ju_wait) (ju_ctx_t* x) {
+	ju_is_online(x, -1);
+}
 
 static void init_glfw() {
 	static int B = 0;
@@ -220,8 +252,11 @@ JU_API void* (ju_ctx_win_get) (ju_ctx_t* x) {
 #define check(DO) if (!in_process(x)) {error("Using JU_PROC function outside process callback!", 0);DO;};
 
 JU_PROC size_t (ju_length) (ju_ctx_t* x) {
-	check(return 0);
-	return x->length;
+	// mutex is important for keep bufflen same!
+	mtx_lock(&x->mdata);
+	size_t r = x->length;
+	mtx_unlock(&x->mdata);
+	return r;
 }
 JU_API  jack_nframes_t (ju_rate) (ju_ctx_t* x) {
 	return jack_get_sample_rate(x->client);

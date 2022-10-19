@@ -13,7 +13,7 @@ INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
 CPPFLAGS ?= $(INC_FLAGS) -MMD -MP -O0 -Wall -Wextra -Wno-unused -fms-extensions -fsanitize=address -fsanitize=leak -fsanitize=undefined
 
-LDLIBS = -lm -lpthread -ljack -lglfw
+LDLIBS = -lm -lpthread -ljack -lglfw -lGL
 
 
 $(BINARY_DIR)/$(TARGET_EXEC): $(OBJS)

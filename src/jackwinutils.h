@@ -36,7 +36,7 @@ JWU_API void ju_draw_pool();
 /*
  * Returns size of the framebuffer
  */
-JWU_API struct{int w, h;} ju_draw_size(ju_ctx_t*);
+JWU_API struct ju_wh_s{int w, h;} ju_draw_size(ju_ctx_t*);
 
 /***********************************************
  *
@@ -51,15 +51,14 @@ JWU_API struct{int w, h;} ju_draw_size(ju_ctx_t*);
  * YOU 100% WILL GET SEGFAULT!
  *
  * Instead, copy buffer from port, using JACKBUFFER API
- * <jackbuffer.h> or memcpy + mutex!
+ * <jackbuffer.h> or memcpy to temp array + mutex!
  * 
  * @arg sample array
  * @arg samples count
  * @arg x
  * @arg y
  * @arg width
- * @arg height
  */
-JWU_API void ju_draw_samples(ju_sample_t*, size_t, int, int, int, int);
-JWU_API void ju_draw_buff (ju_buff_t*, int, int, int, int);
+
+JWU_API void ju_draw_samples(ju_sample_t*, size_t, float, float, float);
 

@@ -18,6 +18,7 @@ size_t generator(void*, ju_sample_t* d, size_t c) {
 	return 1;
 }
 
+// jack process callback
 void process(ju_ctx_t* ctx, size_t len) {
 	// output < input
 	ju_port_write(ctx, ports[1], ju_port_read(ctx, ports[0]));
@@ -30,7 +31,7 @@ void process(ju_ctx_t* ctx, size_t len) {
 	ju_port_write_stream(ctx, ports[2], generator, NULL);
 }
 
-void check_buffer(ju_ctx_t* x) {
+void check_buffer(ju_ctx_t* x) { // if buffer size is not enough - realloc it!
 	if (oldsize < ju_length(x)) {
 		oldsize = ju_length(x);
 		fprintf(stderr, "buffer size changed to %li\n", oldsize);
@@ -54,34 +55,24 @@ void loop(ju_ctx_t* ctx) {
 
 
 int main(void) {
-	printf("Heloo World!\n");
 	// create context
-	ju_ctx_t* ctx = ju_ctx_init("test", NULL);
-
+	ju_ctx_t* ctx = ju_ctx_init("waveform", NULL);
 	// debug info
 	printf("JACK Version : %s\nGLFW version : %s\n", ju_jack_info(),
 		ju_glfw_info());
-	
 	// open ports
 	ports[0] = ju_port_open(ctx, "input", JU_INPUT, 0),
 	ports[1] = ju_port_open(ctx, "output", JU_OUTPUT, 0),
 	// independed generator is terminal :p
 	ports[2] = ju_port_open(ctx, "generator", JU_OUTPUT, JackPortIsTerminal);
-
 	// open window and cache buffers
 	ju_ctx_win(ctx, 640, 480);
 	check_buffer(ctx);
-
 	// start processing
 	ju_start(ctx, process);
-
-	// and wait 'till server dies xD
+	// and wait 'till server dies or window will be closed xD
 	ju_loop(ctx, loop, 0);
-
-	// free context
+	// free context (window will be freed too in context freeing functuion)
 	ju_ctx_unint(ctx);
 	ju_buff_uninit(buff);
-	// and buffers!
-	printf("oh no! bye!\n");
-	fflush(stdout);
 }

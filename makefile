@@ -1,48 +1,33 @@
-TARGET_EXEC ?= run
+# Quick and Dirty makefile to run other makefiles in source dir :D
 
-BUILD_DIR ?= ./build
-BINARY_DIR ?= ./
-SRC_DIRS ?= ./src 
+export # export everything :)
 
-SRCS := $(shell find $(SRC_DIRS) -name '*.cpp' -or -name '*.c' -or -name '*.s')
-OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
-DEPS := $(OBJS:.o=.d)
+ROOT_DIR = $(shell pwd) # root make directory
+MAKE_DEP = $(CURR_DIR)/make_magic # stuff included in every makefile
 
-INC_DIRS := $(shell find $(SRC_DIRS) -type d) 
-INC_FLAGS := $(addprefix -I,$(INC_DIRS))
+BLD_DIR ?= $(CURR_DIR)/build   # build directory
+BIN_DIR ?= $(CURR_DIR)/bin     # output binaries
+INC_DIR ?= $(CURR_DIR)/include # shared headers
+TAR_DIR ?= $(CURR_DIR)/source  # directory with targets
 
-CPPFLAGS ?= $(INC_FLAGS) -MMD -MP -O0 -Wall -Wextra -Wno-unused -fms-extensions -fsanitize=address -fsanitize=leak -fsanitize=undefined
+TARGETS := $(shell find $(TAR_DIR) -name 'makefile')
+LDLIBS   = -lm -ljack
 
-LDLIBS = -lm -lpthread -ljack -lglfw -lGL
+INCFLAGS = -I$(INC_DIR)
+CMPFLAGS = -O0 -fsanitize=address -Wall -Wextra
+CCFLAGS  = -std=c11 
+CXXFLAGS = -fno-exceptions -std=c++20
+CLDFLAGS = 
 
+all : $(TARGETS)
+.PHONY: all $(TARGETS)
 
-$(BINARY_DIR)/$(TARGET_EXEC): $(OBJS)
-	$(MKDIR_P) $(dir $@)
-	$(CC) $(OBJS)  -o $@ $(LDLIBS) -fsanitize=address -fsanitize=leak -fsanitize=undefined
+$(TARGETS) : $(BIN_DIR)/$@
+	$(MAKE) -C $@
 
-# assembly
-$(BUILD_DIR)/%.s.o: %.s
-	$(MKDIR_P) $(dir $@)
-	$(AS) $(ASFLAGS) -c $< -o $@
+$(TARGETS) : TARGET = $@
 
-# c source
-$(BUILD_DIR)/%.c.o: %.c
-	$(MKDIR_P) $(dir $@)
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+.PHONY: clear
 
-# c++ source
-$(BUILD_DIR)/%.cpp.o: %.cpp
-	$(MKDIR_P) $(dir $@)
-	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -c $< -o $@
-
-
-.PHONY: clean
-
-clean:
-	rm -rf $(BUILD_DIR)
-
--include $(DEPS)
-
-MKDIR_P ?= mkdir -p
-
-
+clear :
+	$(RM) -rf $(BLD_DIR)

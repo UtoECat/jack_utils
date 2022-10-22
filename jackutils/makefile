@@ -1,27 +1,45 @@
-include (MAKE_DEP)
-TARGET_EXEC ?= .o
-SRC_DIRS ?= .
+TARGET  := $(TARGET).o
 
-CMPFLAGS += $(INCFLAGS) -MMD -MP
-CLDFLAGS += -fPIC -r
-LDLIBS   += -lGL -lglfw
-OBJS := $(SRCS:%=$(BLD_DIR)/%.o) #don't include ourself
+BUILD_DIR    ?= ./build
+BINARY_DIR   ?= ../bin #should be normally defined
+SOURCE_DIRS  ?= ./
+#INCLUDE_DIRS ?= ../ #too
+INCLUDE_DIRS += ./
 
+SRCS := $(shell find $(SOURCE_DIRS) -name '*.c' -or -name '*.cpp')
+OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
+DEPS := $(OBJS:.o=.d)
 
-# target
-$(BIN_DIR)/$(TARGET_EXEC): $(OBJS)
+INC_FLAGS := $(addprefix -I,$(INCLUDE_DIRS))
+UNIFLAGS ?= -O2 -fsanitize=address -fsanitize=leak -Wall -Wextra -flto
+LINFLAGS += -r 
+CMPFLAGS ?= $(INC_FLAGS) -MMD -MP $(UNIFLAGS) -std=gnu11 
+CXXFLAGS ?= $(INC_FLAGS) -MMD -MP $(UNIFLAGS) -std=gnu++20 -fno-exceptions
+
+SHRDLIBS  = -lm -ljack -lglfw -lGL
+
+$(BINARY_DIR)/$(TARGET): $(OBJS)
+	@echo "$@ in path $(BINARY_DIR)"
 	$(MKDIR_P) $(dir $@)
-	$(CXX) $(CLDFLAGS) $(OBJS) -o $@ 
-# c++
-$(BLD_DIR)/%.cpp.o: %.cpp
+	$(CXX) $(OBJS) -o $@ $(LDLIBS) $(UNIFLAGS) $(LINFLAGS)
+
+# c source
+$(BUILD_DIR)/%.c.o: %.c
+	$(MKDIR_P) $(dir $@)
+	$(CC) $(CMPFLAGS) -c $< -o $@
+
+# cpp source
+$(BUILD_DIR)/%.cpp.o: %.cpp
 	$(MKDIR_P) $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
-# c source
-$(BLD_DIR)/%.c.o: %.c
-	$(MKDIR_P) $(dir $@)
-	$(CC) $(CCFLAGS) -c $< -o $@
+
+
+
+.PHONY: clean
+
+clean:
+	rm -rf $(BUILD_DIR)
 
 -include $(DEPS)
 
 MKDIR_P ?= mkdir -p
-

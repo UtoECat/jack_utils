@@ -1,7 +1,9 @@
 # jackutils - what is this?
-Jackutils is a library and a set of useful utilities for the jack audio server. The library implements a simple api for managing connected ports using descriptors, connecting and checking whether the jack server is working, opening a glfw window and primitive drawing functions (for visualizations, optional)
-# list of utilites (TODO list lmao)
+Jackutils is a library and a set of useful utilities for the JACK. The library implements a simple api for managing connected ports using descriptors, connecting and checking whether the jack server is working, opening a glfw window and primitive drawing functions (for visualizations, optional)
+
+# list of utilites
 - *Some simple utilities* **TODO**
+- **Generator** *(increased during time waveform generator)*
 - **Waveform** *(visualization utility)*
 - **Spectrum** *(visualization utility)*
 
@@ -11,3 +13,4 @@ Jackutils is a library and a set of useful utilities for the jack audio server. 
 - Usage of ports at this moment is **TOTALLY NOT THREADSAFE** and thats a problem. Any ideas how to lock them threadsafely and fast please.
 - I need more tests in real problems, not for my toy needs. If you have any ideas and suggestions, write to Suggestions
 - Check is this readme is lexically correct. I hate google translator :D
+- ju_settings api is not done yet, need more tests and code.

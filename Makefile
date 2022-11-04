@@ -9,7 +9,7 @@ INCLUDE_DIRS ?= $(realpath ./include)
 INCLUDE_LIBS ?= $(BINARY_DIR)/jackutils.o 
 
 #universal flags => for linker and all compilers
-UNIFLAGS ?= -O0 -fsanitize=undefined -Wall -Wextra #-flto
+UNIFLAGS ?= -O3 -flto -Wall -Wextra #-flto
 # LINker flags... (DON'T ADD ./jackutils.o BY DEFAULT!!1)
 LINFLAGS ?=
 

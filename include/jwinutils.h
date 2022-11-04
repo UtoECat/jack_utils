@@ -7,6 +7,8 @@
 
 #define JWU_API
 
+#include <GL/gl.h>
+
 typedef struct ju_win_s ju_win_t;
 
 // width-height and x-y pairs
@@ -32,6 +34,10 @@ JWU_API void      ju_win_title(ju_win_t*, ju_cstr_t);
 
 JWU_API w_wh_t    ju_win_size(ju_win_t*);
 JWU_API w_xy_t    ju_win_mouse(ju_win_t*);
+JWU_API float     ju_win_scroll(ju_win_t* w);
+
+JWU_API int       ju_win_getkey(ju_win_t* w, int key);
+JWU_API int       ju_win_mousekey(ju_win_t* w, int key);
 
 JWU_API void      ju_win_resize(ju_win_t*, w_wh_t);
 /*
@@ -72,5 +78,7 @@ JWU_API void ju_win_pool_events(void);
  */
 
 JWU_API void ju_draw_samples(ju_sample_t* arr, size_t l, float x, float y, float w, float k);
+
+JWU_API void ju_draw_grid(float kw, float kh, float x, float y, float w, float h);
 
 

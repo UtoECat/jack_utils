@@ -10,8 +10,8 @@
 
 #define JU_MAX_VAR_NAME 64
 
-struct ju_sett_s;
-struct ju_val_s;
+typedef struct ju_sett_s ju_sett_t;
+typedef struct ju_val_s  ju_val_t;
 
 /*
  * User defined callback value type :
@@ -37,6 +37,7 @@ typedef struct ju_val_s { // value
 	char  shortname;
 	bool  as_default; // use this var as unnamed
 	bool  no_argument; // we don't need any arguments :)
+	const char* description; // description for user
 } ju_val_t;
 
 /*
@@ -47,8 +48,7 @@ typedef struct ju_val_s { // value
  * How values setted from environ ? Directly :D
  * >> <long name>=<value>
  * How values setted from settings file :
- * >> [<SECTION_NAME>]
- * >> <long name>=<value><newline>
+ * FIXME NOT IMPLEMENTED :D
  * User Callbacks, if present with some data, will be called :)
  * If callback returns nonzero in saving data process, it will be ignored
  */
@@ -66,13 +66,50 @@ void      ju_sett_uninit(ju_sett_t* s);
 // pfile - always returns + return nonzero in case of error
 void      ju_sett_pargv(ju_sett_t* s, const char** args);
 void      ju_sett_penvi(ju_sett_t* s);
-int       ju_sett_pfile(ju_sett_t* s, const char* f);
+//int       ju_sett_pfile(ju_sett_t* s, const char* f); FIXME
 
 // save functions - saves settings to file
-int       ju_sett_sfile(ju_sett_t* s, const char* f);
+//int       ju_sett_sfile(ju_sett_t* s, const char* f); FIXME
 
-// defines setting. do this AFTER intialization and BEFORE any parsing
+/*
+ * defines setting. do this AFTER intialization and BEFORE any parsing
+ * @arg settings context
+ * @arg option name
+ * @arg option short name
+ * @arg pointer on value
+ * @arg manager callback for value
+ * @arg use as default for values without keys or not :)
+ * @arg (optional) argument description for user
+ *
+ * Special Behaviour = SB
+ * SB: if value == NULL, variable will threated as no need any argument!
+ *
+ * WARNING: Attempt to create variable with same name cause to abort!
+ */
 void      ju_sett_define(ju_sett_t* s, const char* name,
-	char shname, void* val, ju_sett_cb type);
+	char shname, void* val, ju_sett_cb type, bool def, const char* desc);
 
+/*
+ * Returns associated value pointer to setting.
+ * WARNING: This operation is SLOW! Use this only for extra debug
+ * purpose! You must acess to associated value only
+ * through setted pointer at definition process!
+ */
 void*     ju_sett_getval(ju_sett_t* s, const char* name);
+
+/*
+ * Prints informations about all available settings
+ * @arg settings context
+ * @arg program name
+ */
+void ju_sett_print(ju_sett_t* s, const char*);
+
+/*
+ * Debug output of all active variables :)
+ */
+void ju_sett_debug(ju_sett_t* s);
+
+/*
+ * Saves string value to current file/string etc.
+ */
+void ju_sett_save_value(ju_sett_t*, ju_val_t*, char*);

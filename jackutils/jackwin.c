@@ -15,6 +15,7 @@ struct ju_win_s {
 	double old_time;
 	int  stretch;
 	double mdx, mdy, mkx, mky;
+	double scroll; bool updscroll;
 	int width, height;
 };
 
@@ -23,6 +24,14 @@ static void glfwinit__() {
 	if (inited) return;
 	if (glfwInit()) inited = true;
 	atexit(glfwTerminate);
+}
+
+#define MAX(A, B) ((A) > (B) ? (A) : (B))
+
+static void scrollcb (GLFWwindow* w, double x, double y) {
+	ju_win_t* o = glfwGetWindowUserPointer(w);
+	o->scroll = y;
+	o->updscroll = true;
 }
 
 JWU_API ju_win_t* ju_win_open(int a, int b) {
@@ -34,8 +43,13 @@ JWU_API ju_win_t* ju_win_open(int a, int b) {
 	o->stretch = 0;
 	o->mdx = 0; o->mdy = 0; o->mkx = 1; o->mky = 1;
 	o->width = a; o->height = b;
+	o->scroll = 0;
+	o->updscroll = false;
+	glfwSetWindowUserPointer(o->win, o);
+	glfwSetScrollCallback(o->win, scrollcb);
 	return o;
 }
+
 JWU_API void      ju_win_close(ju_win_t* w) {
 	glfwDestroyWindow(w->win);
 	free(w);
@@ -68,6 +82,10 @@ JWU_API w_xy_t    ju_win_mouse(ju_win_t* w) {
 	mx = MIN(MAX(mx, 0), w->width);
 	my = MIN(MAX(my, 0), w->height);
 	return (w_xy_t){mx, my};
+}
+
+JWU_API float ju_win_scroll(ju_win_t* w) {
+	return w->scroll;
 }
 
 JWU_API void      ju_win_resize(ju_win_t* w, w_wh_t s) {
@@ -103,6 +121,14 @@ JWU_API double ju_draw_begin(ju_win_t* w) {
 	glOrtho(0, w->width, w->height, 0, -100, 100);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
+
+	if (w->updscroll == true) {
+		w->updscroll = false;
+		//fprintf(stderr, "touched %f\n", w->scroll);
+	} else if (w->scroll != 0) {
+		w->scroll = 0;//fprintf(stderr, "cleaned :(\n");
+	}
+
 	return dt;
 }
 
@@ -123,6 +149,13 @@ JWU_API void ju_win_pool_events(void) {
 	glfwPollEvents();
 }
 
+JWU_API int       ju_win_getkey(ju_win_t* w, int key) {
+	return glfwGetKey(w->win, key);
+}
+JWU_API int       ju_win_mousekey(ju_win_t* w, int key) {
+	return glfwGetMouseButton(w->win, key);
+}
+
 JWU_API bool      ju_win_should_close(ju_win_t* w) {
 	return glfwWindowShouldClose(w->win);
 }
@@ -135,4 +168,14 @@ JWU_API void ju_draw_samples(ju_sample_t* arr, size_t l, float x, float y, float
 	glEnd();
 }
 
-
+JWU_API void ju_draw_grid(float kw, float kh, float sx, float sy, float w, float h) {
+	for (float x = sx; x < sx + w; x += kw)
+		for (float y = sy; y < sy + h; y += kh) {
+			glBegin(GL_LINE_LOOP);
+			glVertex2f(x, y);
+			glVertex2f(x + kw, y);
+			glVertex2f(x + kw, y + kh);
+			glVertex2f(x, y + kh);
+			glEnd();
+		}
+}

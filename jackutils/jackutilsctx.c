@@ -131,7 +131,7 @@ JU_PROC size_t (ju_length) (ju_ctx_t* x) {
 	mtx_unlock(&x->mdata);
 	return r;
 }
-JU_API  jack_nframes_t (ju_rate) (ju_ctx_t* x) {
+JU_API  jack_nframes_t (ju_samplerate) (ju_ctx_t* x) {
 	mtx_lock(&x->mdata);
 	size_t r = x->samplerate;
 	mtx_unlock(&x->mdata);

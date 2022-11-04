@@ -17,7 +17,7 @@ LINFLAGS += $(INCLUDE_LIBS)
 CMPFLAGS ?= $(INC_FLAGS) -MMD -MP $(UNIFLAGS) -std=gnu11 
 CXXFLAGS ?= $(INC_FLAGS) -MMD -MP $(UNIFLAGS) -std=gnu++20 -fno-exceptions
 
-SHRDLIBS  = -lm -ljack -lglfw -lGL -lfftw3
+SHRDLIBS  = -lm -ljack -lglfw -lGL -lfftw3 -lfftw3f
 
 $(BINARY_DIR)/$(TARGET): $(OBJS)
 	@echo "$@ in path $(BINARY_DIR)"

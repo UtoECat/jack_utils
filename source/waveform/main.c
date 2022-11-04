@@ -70,7 +70,9 @@ void loop(ju_ctx_t* ctx, ju_win_t* w) {
 	float tmp[sz];
 	memcpy(tmp, ju_buff_data(&buff), sizeof(float) * sz);
 	ju_buff_unlock(&buff);
-
+	glColor3f(0.2,0,0);
+	ju_draw_grid(20,20,0,0,ws.w, ws.h);
+	glColor3f(1,1,1);
 	ju_draw_samples(tmp, sz, 0, ws.h/2, ws.w, ws.h/2);
 	ju_win_pool_events();
 }

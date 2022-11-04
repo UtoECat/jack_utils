@@ -6,17 +6,21 @@
 #include <jackutils.h>
 #include <math.h>
 #include <stdio.h>
+#include <stddef.h>
 
 static int port;
 static float freq = 1.0f;
 static float rate = 44100.f;
 
+#define PI2 (3.1415 * 2)
+
 static size_t generator(void*, float* dst, size_t) {
-	static float val = 0.0f;
-	dst[0] = sinf(val) * 0.5;
-	val += freq / rate;
-	freq += 0.01;
-	if (freq > rate / 3) freq = 1.0f;
+	static double cnt = 0;
+	dst[0] = cos(cnt) * 0.5;
+	cnt += freq / rate;
+	freq += 0.04;
+	if ((freq / rate) > 3.1415) freq = 1.0f;
+	if (cnt > PI2) cnt = cnt - PI2;
 	return 1;
 }
 

@@ -100,7 +100,7 @@ JWU_API double ju_draw_begin(ju_win_t* w) {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	glOrtho(0, w->width, -w->height, 0, -100, 100);
+	glOrtho(0, w->width, w->height, 0, -100, 100);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 	return dt;

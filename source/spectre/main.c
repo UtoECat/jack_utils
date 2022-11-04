@@ -7,47 +7,46 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <math.h>
 
-int ports[3] = {0};
+// TODO: make it dynamical
+#define SPECTRUM_QUALITY_K 6
 
-ju_buff_t buff;
-jack_nframes_t oldsize = 0;
+static int port = -1;
+static ju_buff_t buff;
+static jack_nframes_t oldsize = 0;
 
-void check_buffer(ju_ctx_t* x) {
-	if (oldsize < ju_length(x)) {
-		oldsize = ju_length(x);
+static void check_buffer(ju_ctx_t* x) {
+	if (oldsize < ju_length(x) * SPECTRUM_QUALITY_K) {
+		oldsize = ju_length(x) * SPECTRUM_QUALITY_K;
+#ifndef NDEBUG
 		fprintf(stderr, "buffer size changed to %i\n", oldsize);
+#endif
 		ju_buff_resize(&buff, oldsize * sizeof(float));
 	}
 }
 
 // jack process callback
 void process(ju_ctx_t* ctx, size_t len) {
-	// output < input
-	ju_port_write(ctx, ports[1], ju_port_read(ctx, ports[0]), len);
 	// cache to buffer (lock to prevent data racing)
 	ju_buff_lock(&buff);
 	check_buffer(ctx);
-	ju_buff_append(&buff, ju_port_read(ctx, ports[0]), len*sizeof(float));
+	ju_buff_append(&buff, ju_port_read(ctx, port), len*sizeof(float));
 	ju_buff_unlock(&buff);
 }
-
 
 void loop(ju_ctx_t* ctx, ju_win_t* w);
 
 int main(void) {
 	// create context
-	ju_ctx_t* ctx = ju_ctx_init("waveform", NULL);
-	// debug info
+	ju_ctx_t* ctx = ju_ctx_init("spectrum", NULL);
 	printf("JACK Version : %s\n", ju_jack_info());
 	// open ports
-	ports[0] = ju_port_open(ctx, "input", JU_INPUT, 0),
-	ports[1] = ju_port_open(ctx, "output", JU_OUTPUT, 0),
-	// independed generator is terminal :p
-	ports[2] = ju_port_open(ctx, "generator", JU_OUTPUT, JackPortIsTerminal);
-	// open window, FFTWPlan and cache buffers
+	port = ju_port_open(ctx, "input", JU_INPUT, 0);
+	// open window and cache buffer
 	ju_win_t* w = ju_win_open(640, 480);
-	oldsize = ju_length(ctx);
+	ju_win_title(w, ju_get_name(ctx));
+	oldsize = ju_length(ctx) * SPECTRUM_QUALITY_K;
 	ju_buff_init(&buff, oldsize * sizeof(float));
 	// start processing
 	ju_start(ctx, process);
@@ -61,24 +60,28 @@ int main(void) {
 	ju_buff_uninit(&buff);
 }
 
+#define ABS(x) ((x) >= 0.0 ? (x) : -(x))
+
 void loop(ju_ctx_t* ctx, ju_win_t* w) {
 	double dt = ju_draw_begin(w);
-
 	w_wh_t ws = ju_win_size(w);
-	size_t sz = oldsize;
-	float tmp[sz], freq[sz];
 
 	// to prevent data racing
 	ju_buff_lock(&buff);
+	size_t sz = oldsize; // oldsize protected by buffer mutex :p
+	float tmp[sz], freq[sz + 1];
 	memcpy(tmp, ju_buff_data(&buff), sizeof(float) * sz);
 	ju_buff_unlock(&buff);
 
-	// compute FFT and normalize TODO replace FFTW_DHT with something more good
+	// compute FFT and normalize
 	fftwf_plan plan;	
 	plan = fftwf_plan_r2r_1d(sz, tmp, freq, FFTW_DHT, FFTW_ESTIMATE);
 	fftwf_execute(plan);
 	fftwf_destroy_plan(plan);
+	for (size_t i = 0; i < sz; i++)
+					freq[i] = ABS(freq[i] / sqrt(sz));
 
-	ju_draw_samples(freq, sz, 0, 0, ws.w, ws.h/2);
+	// other half of spectre is an a mirror :p
+	ju_draw_samples(freq, sz/2, 0, ws.h - 2, ws.w, -ws.h);
 	ju_win_pool_events();
 }

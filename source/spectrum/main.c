@@ -27,9 +27,6 @@ static jack_nframes_t oldsize = 0;
 static void check_buffer(ju_ctx_t* x) {
 	if (oldsize < ju_length(x) * SPECTRUM_QUALITY_K) {
 		oldsize = ju_length(x) * SPECTRUM_QUALITY_K;
-#ifndef NDEBUG
-		fprintf(stderr, "buffer size changed to %i\n", oldsize);
-#endif
 		ju_buff_resize(&buff, oldsize * sizeof(float));
 	}
 }
@@ -46,7 +43,7 @@ void process(ju_ctx_t* ctx, size_t len) {
 static void loop(ju_ctx_t* ctx, ju_win_t* w);
 
 static int normalizer = 3; // best normalizer
-static int window     = 0; // ddefault window = rectangle :D
+static int window     = 1; // ddefault window = gauss :D
 
 static void argp (char c, const char* arg) {
 	if (c == 'm') {
@@ -88,46 +85,7 @@ int main(int argc, char** argv) {
 #define ABS(x) ((x) >= 0.0 ? (x) : -(x))
 #define PI 3.1415
 
-// Normalizers functions using macros magic :D
-#define DEFNORM(name, code) \
-static float name(float v, float m) {code;}
-// unique filter definition 
-#define FILTER(S, V) ({static float f[S] = {0}; \
-for (int i = 0; i < S-1; i++) f[i] = f[i + 1]; float sum = 0;\
-for (int i = 0; i < S-1; i++) sum += f[i];\
-f[S-1] = (sum + V)/(float)S; f[S-1];})
-
-DEFNORM(divsqrt, return v / sqrt(m)) // division on sqrt of length
-DEFNORM(lognorm, return (log10((divsqrt(v, m)+0.07)*15)/2)-0.01) // log10 porn :D
-DEFNORM(filtsqrt, return divsqrt(FILTER(5, v), m)) // same as divsqrt, but filtered
-DEFNORM(filtnorm, return lognorm(FILTER(5, v), m)) // same as lognorm, but filtered (not bad)
-
-// window functions using same magic :D
-#define DEFWIN(name, code) static float name(float v, float s) {code;}
-DEFWIN(winrect, return 1) // rectangle window
-DEFWIN(wingaus, float a = (s-1)/2.0; float t = (v-a)/(0.5*a);
-t *= t; return exp(-t/2)) // gausse
-DEFWIN(winhamm, return 0.54 - 0.46*cos((2*PI*v)/(s-1))) // hamming
-DEFWIN(winhann, return 0.5*(1-cos((2*PI*v)/(s-1)))) // Hann
-
-// normalizers array
-static bool switchnorm = false;
-static bool switchwin  = false;
-
-float (*normalizers[]) (float v, float m) = {
-	divsqrt, lognorm, filtsqrt, filtnorm
-};
-
-struct {
-	float (*win) (float v, float s);
-	const char* name;
-} windows[] = {
-	{winrect, "rectangle"},
-	{wingaus, "gausse"},
-	{winhamm, "hamming"},
- 	{winhann, "hann"}
-};
-
+#include <spectrum_bits.h>
 // visual controls
 static float scale = 1;
 static float widthscale = 1;
@@ -147,16 +105,16 @@ static void loop(ju_ctx_t* ctx, ju_win_t* w) {
 	ju_buff_unlock(&buff);
 
 	// apply window to signal
-	for (int i = 0; i < sz; i++)
-		tmp[i] *= windows[window].win(i, sz);
+	for (int i = 0; i < (int)sz; i++)
+		tmp[i] *= windows[window](i, sz);
 
 	// compute FFT and normalize
 	fftwf_plan plan;	
 	plan = fftwf_plan_r2r_1d(sz, tmp, freq, FFTW_DHT, FFTW_ESTIMATE);
 	fftwf_execute(plan);
 	fftwf_destroy_plan(plan);
-	for (size_t i = 0; i < sz/2; i++) // optimisation : we don't show the half of FFT at all, so skip it :D
-					freq[i] = normalizers[normalizer](ABS(freq[i]), sz);
+	for (size_t i = 0; i < sz/2; i++)
+		freq[i] = normalizers[normalizer](freq, i, sz);
 
 	// input
 	if (ju_win_mousekey(w, GLFW_MOUSE_BUTTON_1)) {
@@ -170,23 +128,8 @@ static void loop(ju_ctx_t* ctx, ju_win_t* w) {
 			oldmouse = m;
 		}
 	} else hold_started = false;
-
-	if(ju_win_getkey(w, GLFW_KEY_1)) {
-		if (!switchnorm) {
-			normalizer += 1;
-			if (normalizer > 3) normalizer = 0;
-			switchnorm = true;
-		}
-	} else switchnorm = false;
+	ctrl_bits(w);
 	
-	if(ju_win_getkey(w, GLFW_KEY_2)) {
-		if (!switchwin) {
-			window += 1;
-			if (window > 3) window = 0;
-			switchwin = true;
-		}
-	} else switchwin = false;
-
 	if (ju_win_getkey(w, GLFW_KEY_MINUS)) widthscale -= 0.05;
 	if (ju_win_getkey(w, GLFW_KEY_EQUAL)) widthscale += 0.05;
 	if (ju_win_getkey(w, GLFW_KEY_9)) widthscale = 1;
@@ -208,5 +151,8 @@ static void loop(ju_ctx_t* ctx, ju_win_t* w) {
 	// other half of spectre is an a mirror, so skip it :p
 	ju_draw_samples(freq, sz/2, 0, ws.h - 2, ws.w * widthscale, -ws.h);
 	glPopMatrix();
+	ju_draw_int(window + 10*normalizer, 5, 5, 10);
+	ju_draw_int(123456, 5, 30, 10);
+	ju_draw_int(-66606, 5, 60, 10);
 	ju_win_pool_events();
 }

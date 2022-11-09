@@ -81,4 +81,5 @@ JWU_API void ju_draw_samples(ju_sample_t* arr, size_t l, float x, float y, float
 
 JWU_API void ju_draw_grid(float kw, float kh, float x, float y, float w, float h);
 
-
+JWU_API void ju_draw_digit(char d, float x, float y, float w, float h);
+JWU_API void ju_draw_int(int i, float x, float y, float s);

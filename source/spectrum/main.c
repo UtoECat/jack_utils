@@ -69,15 +69,15 @@ int main(void) {
 #define DEFNORM(name, code) \
 static float name(float v, float m) {code;}
 // unique filter definition 
-#define FILTER(S, V) static float f[S] = {0}; \
+#define FILTER(S, V) ({static float f[S] = {0}; \
 for (int i = 0; i < S-1; i++) f[i] = f[i + 1]; float sum = 0;\
 for (int i = 0; i < S-1; i++) sum += f[i];\
-f[S-1] = (sum + V)/(float)S; return f[S-1];
+f[S-1] = (sum + V)/(float)S; f[S-1];})
 
 DEFNORM(divsqrt, return v / sqrt(m)) // division on sqrt of length
 DEFNORM(lognorm, return (log10((divsqrt(v, m)+0.07)*15)/2)-0.01) // log10 porn :D
-DEFNORM(filtsqrt, FILTER(5, divsqrt(v, m))) // same as divsqrt, but filtered
-DEFNORM(filtnorm, FILTER(5, lognorm(v, m))) // same as lognorm, but filtered (BEST!)
+DEFNORM(filtsqrt, return divsqrt(FILTER(5, v), m)) // same as divsqrt, but filtered
+DEFNORM(filtnorm, return lognorm(FILTER(5, v), m)) // same as lognorm, but filtered (BEST!)
 
 // normalizers array
 static int normalizer = 3; // best normalizer

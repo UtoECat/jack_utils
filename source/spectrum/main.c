@@ -13,8 +13,8 @@
 
 #define PROGRAM_NAME "spectrum"
 #define PROGRAM_VERSION 0.1
-#define PROGRAM_USAGE "spectrum [-m MODE] [-h] [-v]"
-#define PROGRAM_HELP  "Copyright (C) UtoECat 2022. All rights reserved!\n This program is free software. GNU GPL 3.0 License! No any Warrianty!"
+#define PROGRAM_USAGE "spectrum [-m MODE] [-w WINDOW] [-h] [-v]"
+#define PROGRAM_HELP  "Copyright (C) UtoECat 2022. All rights reserved!\n This program is free software. GNU GPL 3.0 License! No any Warrianty!\n Keyboard controls : 1- change mode, 2 - change window, 0 - reset pos, 9 - reset width scale. +/- - increase/decrease width scale.\n LMB - move; Scroll - scale; :) enjoy"
 #include <ju_args.h>
 
 // TODO: make it dynamical
@@ -49,14 +49,20 @@ static int normalizer = 3; // best normalizer
 static int window     = 0; // ddefault window = rectangle :D
 
 static void argp (char c, const char* arg) {
-	normalizer = atoi(arg);
-	if (normalizer > 3) normalizer = 3;
-	if (normalizer < 0) normalizer = 0;
+	if (c == 'm') {
+		normalizer = atoi(arg);
+		if (normalizer > 3) normalizer = 3;
+		if (normalizer < 0) normalizer = 0;
+	} else {
+		window = atoi(arg);
+		if (window > 3) window = 3;
+		if (window < 0) window = 0;
+	}
 }
 
 int main(int argc, char** argv) {
 	// parse arguments
-	ja_parse(argc, argv, argp, "m:");
+	ja_parse(argc, argv, argp, "m:w:");
 	// create context
 	ju_ctx_t* ctx = ju_ctx_init("spectrum", NULL);
 	printf("JACK Version : %s\n", ju_jack_info());
@@ -81,10 +87,6 @@ int main(int argc, char** argv) {
 
 #define ABS(x) ((x) >= 0.0 ? (x) : -(x))
 #define PI 3.1415
-
-static inline float blackman_window(float v, float m) {
-	return(0.42 - 0.5*cos((2*PI*v)/m) + 0.08*cos((4*PI*v)/m));
-}
 
 // Normalizers functions using macros magic :D
 #define DEFNORM(name, code) \

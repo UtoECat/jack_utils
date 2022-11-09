@@ -66,8 +66,7 @@ JWU_API void      ju_win_title(ju_win_t* w, ju_cstr_t n) {
 }
 
 JWU_API w_wh_t    ju_win_size(ju_win_t* w) {
-	w_wh_t ret = {0, 0};
-	glfwGetWindowSize(w->win, &ret.w, &ret.h);
+	w_wh_t ret = {w->width, w->height};
 	return ret;
 }
 
@@ -102,6 +101,7 @@ JWU_API double ju_draw_begin(ju_win_t* w) {
 	w->old_time += dt;
 	// stretch calc...
 	w_wh_t size = ju_win_size(w);
+	glfwGetWindowSize(w->win, &size.w, &size.h);
 	if (!w->stretch) {
 		w->width = size.w;
 		w->height = size.h;
@@ -124,11 +124,9 @@ JWU_API double ju_draw_begin(ju_win_t* w) {
 
 	if (w->updscroll == true) {
 		w->updscroll = false;
-		//fprintf(stderr, "touched %f\n", w->scroll);
 	} else if (w->scroll != 0) {
-		w->scroll = 0;//fprintf(stderr, "cleaned :(\n");
+		w->scroll = 0;
 	}
-
 	return dt;
 }
 
@@ -136,7 +134,8 @@ JWU_API double ju_draw_begin(ju_win_t* w) {
  * Setups window viewport with stretch checks and calculations.
  */
 JWU_API void ju_draw_view(ju_win_t* w, w_rect_t r) {
-	w_wh_t size = ju_win_size(w);
+	w_wh_t size = {1, 1};
+	glfwGetWindowSize(w->win, &size.w, &size.h);
 	double scale = MIN(size.w/(double)w->width, size.h/(double)w->height); 
 	double neww = w->width * scale;
 	double newh = w->height* scale;

@@ -14,3 +14,4 @@ Jackutils is a library and a set of useful utilities for the JACK. The library i
 - I need more tests in real problems, not for my toy needs. If you have any ideas and suggestions, write to Suggestions
 - Check is this readme is lexically correct. I hate google translator :D
 - ju_settings api is not done yet, need more tests and code.
+- autoclose timeout for clients... ?

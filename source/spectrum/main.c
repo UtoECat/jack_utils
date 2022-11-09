@@ -44,7 +44,10 @@ void process(ju_ctx_t* ctx, size_t len) {
 }
 
 static void loop(ju_ctx_t* ctx, ju_win_t* w);
+
 static int normalizer = 3; // best normalizer
+static int window     = 0; // ddefault window = rectangle :D
+
 static void argp (char c, const char* arg) {
 	normalizer = atoi(arg);
 	if (normalizer > 3) normalizer = 3;
@@ -77,8 +80,13 @@ int main(int argc, char** argv) {
 }
 
 #define ABS(x) ((x) >= 0.0 ? (x) : -(x))
+#define PI 3.1415
 
-// macros magic :D
+static inline float blackman_window(float v, float m) {
+	return(0.42 - 0.5*cos((2*PI*v)/m) + 0.08*cos((4*PI*v)/m));
+}
+
+// Normalizers functions using macros magic :D
 #define DEFNORM(name, code) \
 static float name(float v, float m) {code;}
 // unique filter definition 
@@ -90,13 +98,32 @@ f[S-1] = (sum + V)/(float)S; f[S-1];})
 DEFNORM(divsqrt, return v / sqrt(m)) // division on sqrt of length
 DEFNORM(lognorm, return (log10((divsqrt(v, m)+0.07)*15)/2)-0.01) // log10 porn :D
 DEFNORM(filtsqrt, return divsqrt(FILTER(5, v), m)) // same as divsqrt, but filtered
-DEFNORM(filtnorm, return lognorm(FILTER(5, v), m)) // same as lognorm, but filtered (BEST!)
+DEFNORM(filtnorm, return lognorm(FILTER(5, v), m)) // same as lognorm, but filtered (not bad)
+
+// window functions using same magic :D
+#define DEFWIN(name, code) static float name(float v, float s) {code;}
+DEFWIN(winrect, return 1) // rectangle window
+DEFWIN(wingaus, float a = (s-1)/2.0; float t = (v-a)/(0.5*a);
+t *= t; return exp(-t/2)) // gausse
+DEFWIN(winhamm, return 0.54 - 0.46*cos((2*PI*v)/(s-1))) // hamming
+DEFWIN(winhann, return 0.5*(1-cos((2*PI*v)/(s-1)))) // Hann
 
 // normalizers array
 static bool switchnorm = false;
+static bool switchwin  = false;
 
 float (*normalizers[]) (float v, float m) = {
 	divsqrt, lognorm, filtsqrt, filtnorm
+};
+
+struct {
+	float (*win) (float v, float s);
+	const char* name;
+} windows[] = {
+	{winrect, "rectangle"},
+	{wingaus, "gausse"},
+	{winhamm, "hamming"},
+ 	{winhann, "hann"}
 };
 
 // visual controls
@@ -116,6 +143,10 @@ static void loop(ju_ctx_t* ctx, ju_win_t* w) {
 	float tmp[sz], freq[sz + 1];
 	memcpy(tmp, ju_buff_data(&buff), sizeof(float) * sz);
 	ju_buff_unlock(&buff);
+
+	// apply window to signal
+	for (int i = 0; i < sz; i++)
+		tmp[i] *= windows[window].win(i, sz);
 
 	// compute FFT and normalize
 	fftwf_plan plan;	
@@ -145,6 +176,14 @@ static void loop(ju_ctx_t* ctx, ju_win_t* w) {
 			switchnorm = true;
 		}
 	} else switchnorm = false;
+	
+	if(ju_win_getkey(w, GLFW_KEY_2)) {
+		if (!switchwin) {
+			window += 1;
+			if (window > 3) window = 0;
+			switchwin = true;
+		}
+	} else switchwin = false;
 
 	if (ju_win_getkey(w, GLFW_KEY_MINUS)) widthscale -= 0.05;
 	if (ju_win_getkey(w, GLFW_KEY_EQUAL)) widthscale += 0.05;

@@ -41,6 +41,8 @@ JU_API int ju_port_rawfind(ju_ctx_t* x, jack_port_t* p, int b) {
 	return empity; 
 }
 
+//jack_port_by_id
+
 JU_API int  ju_port_open (ju_ctx_t* x, ju_cstr_t n, int mode, int f) {
 	if (mode != JU_INPUT && mode != JU_OUTPUT) return -1;
 	jack_port_t* p = jack_port_register(x->client,

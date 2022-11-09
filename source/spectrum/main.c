@@ -1,6 +1,5 @@
 #include <jackutils.h>
 #include <jwinutils.h>
-#include <ju_settings.h>
 #include <fftw3.h>
 
 // JackUtils library usage example
@@ -11,6 +10,12 @@
 #include <math.h>
 #include <GL/gl.h>
 #include <GLFW/glfw3.h>
+
+#define PROGRAM_NAME "spectrum"
+#define PROGRAM_VERSION 0.1
+#define PROGRAM_USAGE "spectrum [-m MODE] [-h] [-v]"
+#define PROGRAM_HELP  "Copyright (C) UtoECat 2022. All rights reserved!\n This program is free software. GNU GPL 3.0 License! No any Warrianty!"
+#include <ju_args.h>
 
 // TODO: make it dynamical
 #define SPECTRUM_QUALITY_K 6
@@ -38,9 +43,17 @@ void process(ju_ctx_t* ctx, size_t len) {
 	ju_buff_unlock(&buff);
 }
 
-void loop(ju_ctx_t* ctx, ju_win_t* w);
+static void loop(ju_ctx_t* ctx, ju_win_t* w);
+static int normalizer = 3; // best normalizer
+static void argp (char c, const char* arg) {
+	normalizer = atoi(arg);
+	if (normalizer > 3) normalizer = 3;
+	if (normalizer < 0) normalizer = 0;
+}
 
-int main(void) {
+int main(int argc, char** argv) {
+	// parse arguments
+	ja_parse(argc, argv, argp, "m:");
 	// create context
 	ju_ctx_t* ctx = ju_ctx_init("spectrum", NULL);
 	printf("JACK Version : %s\n", ju_jack_info());
@@ -80,7 +93,6 @@ DEFNORM(filtsqrt, return divsqrt(FILTER(5, v), m)) // same as divsqrt, but filte
 DEFNORM(filtnorm, return lognorm(FILTER(5, v), m)) // same as lognorm, but filtered (BEST!)
 
 // normalizers array
-static int normalizer = 3; // best normalizer
 static bool switchnorm = false;
 
 float (*normalizers[]) (float v, float m) = {
@@ -94,7 +106,7 @@ static float X = 0, Y = 0;
 static bool hold_started = false;
 static w_xy_t oldmouse;
 
-void loop(ju_ctx_t* ctx, ju_win_t* w) {
+static void loop(ju_ctx_t* ctx, ju_win_t* w) {
 	double dt = ju_draw_begin(w);
 	w_wh_t ws = ju_win_size(w);
 

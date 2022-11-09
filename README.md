@@ -13,4 +13,3 @@ Jackutils is a library and a set of useful utilities for the JACK. The library i
 - Usage of ports at this moment is **TOTALLY NOT THREADSAFE** and thats a problem. Any ideas how to lock them threadsafely and fast please.
 - I need more tests in real problems, not for my toy needs. If you have any ideas and suggestions, write to Suggestions
 - Check is this readme is lexically correct. I hate google translator :D
-- ju_settings api is not done yet, need more tests and code.

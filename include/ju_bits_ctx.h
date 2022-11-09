@@ -6,7 +6,9 @@
  */
 #pragma once
 
+#define CLOSE_PORT_NAME "__close"
 #define JU_STAT static inline
+#define S_TO_MS(V) (V * 1000000)
 
 typedef struct ju_port_s {
 	jack_port_t* port;
@@ -16,17 +18,23 @@ typedef struct ju_port_s {
 
 struct ju_ctx_s {
 	jack_client_t* client;
+	jack_port_t* close; // close port :)
 	// protection mutexes
 	// works - locked until ju_start called and ju_stop is not called
-	// mdata - lock for samplerate, sample buffers length and ports
+	// mdata - lock for samplerate, sample buffers length
 	// mutex - locked while Jack Audio Process function is working :p
 	mtx_t mutex, works, mdata;
 	ju_process_func_t proc_cb;
 	// mdata protection begin
 	size_t       length;
 	size_t       samplerate;
+	ju_uint8_t   connected_ports_cnt; // count of connected ports :)
 	ju_uint8_t   last_port;
 	ju_port_t    ports[JU_MAX_PORTS + 1];
+	// __ autoclose begin
+	size_t       ac_timeout;   // autoclose timeout in microsec (0 = disabled)
+	jack_time_t  ac_last_time; // last time autoclose checked (sec = 1000000)
+	// __autoclose end
 	// mdata protection end
 };
 

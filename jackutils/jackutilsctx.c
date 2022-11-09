@@ -25,6 +25,7 @@ static int (ju_bscb)(jack_nframes_t new, void* p) {
 	return 0;
 }
 
+// sample rate changes callback
 static int (ju_srcb)(jack_nframes_t new, void* p) {
 	ju_ctx_t* x = (ju_ctx_t*) p;
 	mtx_lock(&x->mdata);
@@ -46,6 +47,17 @@ static void (ju_shcb)(void* arg) {
 	error("Jack server is shudown!", 0);
 	mtx_unlock(&x->works);
 }
+
+// that's right :D
+static void (ju_close_check) (jack_port_id_t, jack_port_id_t b, int connect, void* arg) {
+	ju_ctx_t* x = (ju_ctx_t*) arg;
+	if (jack_port_by_id(x->client, b) == x->close && connect) {
+		fprintf(stderr, "JACKUTILS: __close port is connected! Stopping client...\n");
+		ju_stop(x);
+	}
+}
+
+// API
 
 JU_API ju_ctx_t* (ju_ctx_init)  (ju_cstr_t name, ju_cstr_t server) {
 	jack_status_t st;
@@ -71,10 +83,20 @@ JU_API ju_ctx_t* (ju_ctx_init)  (ju_cstr_t name, ju_cstr_t server) {
 	jack_on_shutdown(p->client, ju_shcb, p);	
 	jack_set_buffer_size_callback(p->client, ju_bscb, p);
 	jack_set_sample_rate_callback(p->client, ju_srcb, p);
+
+	//setup close port
+	p->close = jack_port_register(p->client, CLOSE_PORT_NAME, JACK_DEFAULT_AUDIO_TYPE, JackPortIsInput | JackPortIsTerminal, 0);
+	jack_set_port_connect_callback(p->client, ju_close_check, p);
 	return p;
 }
 JU_API void (ju_ctx_uninit) (ju_ctx_t* p) {
-	jack_deactivate(p->client);
+	// close port is user don't do that :p
+	int test = mtx_trylock(&p->works);
+	if (test != 0) jack_deactivate(p->client); // if working 
+	mtx_unlock(&p->works);
+
+	// close ports
+	jack_port_unregister(p->client, p->close);
 	for (int i = 0; i <= p->last_port; i++) {
 		jack_port_t* t = PORTGETJ(p, i);
 		if (t && jack_port_is_mine(p->client, t) 
@@ -99,11 +121,16 @@ JU_API int  (ju_start) (ju_ctx_t* x, ju_process_func_t f) {
 	if (!f) error("bad function ptr", 0);
 	x->proc_cb = f;
 	if (!f) return 1;
-	mtx_lock(&x->works);
+	if (mtx_trylock(&x->works) != 0) {
+		error_cb("Can't start client!", 0);
+		return 1;
+	}
 	return jack_activate(x->client);
 }
 JU_API void (ju_stop)  (ju_ctx_t* x) {
-	jack_deactivate(x->client);
+	int i = mtx_trylock(&x->works);
+	if (i != 0) jack_deactivate(x->client); // if working 
+	else error_cb("Can't stop client processing!", i);
 	mtx_unlock(&x->works);
 }
 
@@ -137,5 +164,3 @@ JU_API  jack_nframes_t (ju_samplerate) (ju_ctx_t* x) {
 	mtx_unlock(&x->mdata);
 	return r;
 }
-
-

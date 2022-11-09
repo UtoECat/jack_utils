@@ -8,13 +8,17 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#define PROGRAM_NAME "waveform"
+#define PROGRAM_VERSION 0.1
+#define PROGRAM_USAGE "waveform [-h] [-v]"
+#define PROGRAM_HELP  "Copyright (C) UtoECat 2022. All rights reserved!\n This program is free software. GNU GPL 3.0 License! No any Warrianty!"
+#include <ju_args.h>
 
 int port;
-
 ju_buff_t buff;
 jack_nframes_t oldsize = 0;
 
-void check_buffer(ju_ctx_t* x) {
+static void check_buffer(ju_ctx_t* x) {
 	if (oldsize < ju_length(x)) {
 		oldsize = ju_length(x);
 #ifndef NDEBUG
@@ -25,7 +29,7 @@ void check_buffer(ju_ctx_t* x) {
 }
 
 // jack process callback
-void process(ju_ctx_t* ctx, size_t len) {
+static void process(ju_ctx_t* ctx, size_t len) {
 	// cache to buffer (lock to prevent data racing)
 	ju_buff_lock(&buff);
 	check_buffer(ctx);
@@ -33,10 +37,10 @@ void process(ju_ctx_t* ctx, size_t len) {
 	ju_buff_unlock(&buff);
 }
 
+static void loop(ju_ctx_t* ctx, ju_win_t* w);
 
-void loop(ju_ctx_t* ctx, ju_win_t* w);
-
-int main(void) {
+int main(int argc, char** argv) {
+	ja_parse(argc, argv, NULL, NULL);
 	// create context
 	ju_ctx_t* ctx = ju_ctx_init("waveform", NULL);
 	printf("JACK Version : %s\n", ju_jack_info());
@@ -60,7 +64,7 @@ int main(void) {
 	ju_buff_uninit(&buff);
 }
 
-void loop(ju_ctx_t* ctx, ju_win_t* w) {
+static void loop(ju_ctx_t* ctx, ju_win_t* w) {
 	double dt = ju_draw_begin(w);
 	w_wh_t ws = ju_win_size(w);
 

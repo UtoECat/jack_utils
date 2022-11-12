@@ -5,7 +5,7 @@
 static inline float filt(float*f, size_t d, size_t s, float (*cb) (float, size_t)) {
 	float v = 0.0f;
 	int i = (int) d;
-	v += IND(i) * 0.5;
+	v += IND(i) * 0.7;
 	v += IND(i-1) * 0.15;  v += IND(i+1) * 0.15;
 	v += IND(i-2) * 0.05;  v += IND(i+2) * 0.05;
 	v += IND(i-3) * 0.025; v += IND(i+3) * 0.025;
@@ -14,9 +14,11 @@ static inline float filt(float*f, size_t d, size_t s, float (*cb) (float, size_t
 }
 #undef IND
 
+static inline float _mini(float v) {return ABS(v) > 1.0 ? 1.0 : ABS(v);}
 // normalize fourie transform output to [0 .. 1]
 static float _norm(float v, size_t s) {return ABS(v) / (float)s * PI;}
-static float _nlog(float v, size_t s) {return (log10(_norm(v, s)*10 + 1));}
+//static float _nlog(float v, size_t s) {return log10(_mini(ABS(v)/sqrt((float)s)/PI)*10 + 1);}
+static float _nlog(float v, size_t s) {return _mini(ABS(v)/sqrt((float)s)/PI);}
 
 DNORM _n1 ENORM {return _norm(f[i], s);};
 DNORM _n2 ENORM {return _nlog(f[i], s);};

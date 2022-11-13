@@ -56,7 +56,7 @@ int main(int argc, char** argv) {
 	// start processing
 	ju_start(ctx, process);
 	// and wait 'till server dies xD
-	ju_is_online(ctx, -1);
+	while (ju_is_online(ctx, 1000)) {};
 	// free context
 	// context will be already stopped in case of server disconnect
 	ju_ctx_uninit(ctx);

@@ -152,7 +152,5 @@ static void loop(ju_ctx_t* ctx, ju_win_t* w) {
 	ju_draw_samples(freq, sz/2, 0, ws.h - 2, ws.w * widthscale, -ws.h);
 	glPopMatrix();
 	ju_draw_int(window + 10*normalizer, 5, 5, 10);
-	ju_draw_int(123456, 5, 30, 10);
-	ju_draw_int(-66606, 5, 60, 10);
 	ju_win_pool_events();
 }

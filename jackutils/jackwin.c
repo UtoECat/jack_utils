@@ -178,3 +178,63 @@ JWU_API void ju_draw_grid(float kw, float kh, float sx, float sy, float w, float
 			glEnd();
 		}
 }
+
+// clockwise
+static void draw_rect_opt(unsigned char flag) { // [0..1]
+	glBegin(GL_LINES);
+	if (flag & 1  ) {glVertex2f(0.0, 0.0); glVertex2f(1.0, 0.0);};
+	if (flag & 2  ) {glVertex2f(1.0, 0.0); glVertex2f(1.0, 0.5);};
+	if (flag & 4  ) {glVertex2f(1.0, 0.5); glVertex2f(1.0, 1.0);};
+	if (flag & 8  ) {glVertex2f(1.0, 1.0); glVertex2f(0.0, 1.0);};
+	if (flag & 16 ) {glVertex2f(0.0, 1.0); glVertex2f(0.0, 0.5);};
+	if (flag & 32 ) {glVertex2f(0.0, 0.5); glVertex2f(0.0, 0.0);};
+	if (flag & 64 ) {glVertex2f(0.0, 0.5); glVertex2f(1.0, 0.5);};
+	glEnd();
+}
+
+static unsigned char digarr[] = {
+	0b00111111, // 0
+	0b00000110, // 1
+	0b01011011, // 2
+	0b01001111, // 3
+	0b01100110, // 4
+	0b01101101, // 5
+	0b01111101, // 6
+	0b00000111, // 7
+	0b01111111, // 8
+	0b01101111, // 9
+	0b01000000, // -
+};
+
+JWU_API void ju_draw_digit(char d, float x, float y, float w, float h) {
+	glPushMatrix();
+	glTranslatef(x, y, 0);
+	glScalef(w, h, 1);
+	if (d >= 0 && d <= 10) draw_rect_opt(digarr[d]);
+	glPopMatrix();
+}
+
+JWU_API void ju_draw_char(char d, float x, float y, float w, float h) {
+	if (d >= '0' && d <= '9') ju_draw_digit(digarr[d - '0'], x,y,w,h);
+	else if (d == '-') ju_draw_digit(digarr[10],x,y,w,h);
+}
+
+static void draw_int(int i, float *x, float y, float s) {
+	const float ws = s - s/3.0;
+	if (i < 0) {
+		ju_draw_digit(10, *x, y, ws, ws*2); *x += s;
+		i = -i;
+	}
+	if (i == 0) {
+		ju_draw_digit(0, *x, y, ws, ws*2); *x += s;
+		return;
+	} else {
+		if (i/10) draw_int(i/10, x, y, s);
+		ju_draw_digit(i%10, *x, y, ws, ws*2); *x += s;
+		return;
+	}
+}
+
+JWU_API void ju_draw_int(int i, float x, float y, float s) {
+	return draw_int(i, &x, y, s);
+}

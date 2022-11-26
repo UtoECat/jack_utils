@@ -1,29 +1,23 @@
 #define DNORM static float
 #define ENORM (float* f, size_t i, size_t s)
 
-#define IND(i) cb(f[(i >= (int)s ? i - (int)s : (i < 0 ? (int)s + i : i))], s)
-static inline float filt(float*f, size_t d, size_t s, float (*cb) (float, size_t)) {
-	float v = 0.0f;
-	int i = (int) d;
-	v += IND(i) * 0.50;
-	v += IND(i-1) * 0.15;  v += IND(i+1) * 0.15;
-	v += IND(i-2) * 0.05;  v += IND(i+2) * 0.05;
-	v += IND(i-3) * 0.025; v += IND(i+3) * 0.025;
-	v += IND(i-4) * 0.025; v += IND(i+4) * 0.025;
-	return v;
-}
-#undef IND
-
 static inline float _mini(float v) {return ABS(v) > 1.0 ? 1.0 : ABS(v);}
-// normalize fourie transform output to [0 .. 1]
-static float _norm(float v, size_t s) {return ABS(v) / (float)s * PI;}
-//static float _nlog(float v, size_t s) {return log10(_mini(ABS(v)/sqrt((float)s)/PI)*10 + 1);}
-static float _nlog(float v, size_t s) {return _mini(ABS(v)/sqrt((float)s));}
+// normalize value to log[0 .. 1]
+static float _nlog(float v, size_t) {return log10(v*10 + 1)/log10(11.0f);}
 
-DNORM _n1 ENORM {return _norm(f[i], s);};
+// log index
+static size_t _logindex(size_t i, size_t s) {
+	float f = (float)i / (float)s;
+	f = 1 - f;
+	float r = log10(f*10 + 1)/log10(11.0f);
+	r = 1 - r;
+	return (size_t)(r * s);
+}
+
+DNORM _n1 ENORM {return f[i];};
 DNORM _n2 ENORM {return _nlog(f[i], s);};
-DNORM _n3 ENORM {return filt(f, i, s, _norm);};
-DNORM _n4 ENORM {return filt(f, i, s, _nlog);};
+DNORM _n3 ENORM {return _nlog(f[_logindex(i, s/2)], s);};
+DNORM _n4 ENORM {return f[_logindex(i, s/2)];};
 
 #undef DNORM
 #undef ENORM

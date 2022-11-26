@@ -108,13 +108,19 @@ static void loop(ju_ctx_t* ctx, ju_win_t* w) {
 	for (int i = 0; i < (int)sz; i++)
 		tmp[i] *= windows[window](i, sz);
 
-	// compute FFT and normalize
+	// compute FFT
 	fftwf_plan plan;	
 	plan = fftwf_plan_r2r_1d(sz, tmp, freq, FFTW_DHT, FFTW_ESTIMATE);
 	fftwf_execute(plan);
 	fftwf_destroy_plan(plan);
+	// normalize spectrum
 	for (size_t i = 0; i < sz/2; i++)
-		freq[i] = normalizers[normalizer](freq, i, sz);
+		freq[i] = ABS(freq[i]) / (float)sz * 3.1415;
+		//freq[i] = i/(sz/2.0f);
+
+	// final normalizing
+	for (size_t i = 0; i < sz/2; i++)
+		tmp[i] = normalizers[normalizer](freq, i, sz);
 
 	// input
 	if (ju_win_mousekey(w, GLFW_MOUSE_BUTTON_1)) {
@@ -149,7 +155,7 @@ static void loop(ju_ctx_t* ctx, ju_win_t* w) {
 	ju_draw_grid(25 * widthscale, 25, 0, 0, ws.w * widthscale, ws.h);
 	glColor4f(1,1,1,1);
 	// other half of spectre is an a mirror, so skip it :p
-	ju_draw_samples(freq, sz/2, 0, ws.h - 2, ws.w * widthscale, -ws.h);
+	ju_draw_samples(tmp, sz/2, 0, ws.h - 2, ws.w * widthscale, -ws.h);
 	glPopMatrix();
 	ju_draw_int(window + 10*normalizer, 5, 5, 10);
 	ju_win_pool_events();

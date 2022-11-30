@@ -1,10 +1,11 @@
 // Window Extension for jackutils library.
+// WARNING: THIS API IS DEPRECATED!
 // 
 // Copyright (C) UtoECat 2022
 // GNU GPL License. No Warrianty!
 
 #include <jackutils.h>
-#include <jwinutils.h>
+#include <jwinutils_deprecated.h>
 #include <stdlib.h>
 #include <stdio.h>
 

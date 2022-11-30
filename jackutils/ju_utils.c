@@ -1,7 +1,7 @@
 // Copyright (C) UtoECat 2022
 // GNU GPL License. No Warrianty!
 
-#include <ju_resample.h>
+#include <ext/ju_resample.h>
 
 uint64_t jr_resample_impl(const float *input, float *output, int inSampleRate, int outSampleRate, uint64_t inputSize, uint32_t channels);
 

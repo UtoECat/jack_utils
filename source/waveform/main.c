@@ -4,7 +4,7 @@
 // No any warrianty!
 
 #include <jackutils.h>
-#include <jwinutils.h>
+#include <jwinutils_deprecated.h>
 
 #include <stdlib.h>
 #include <stdio.h>

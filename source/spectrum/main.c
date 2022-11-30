@@ -1,5 +1,5 @@
 #include <jackutils.h>
-#include <jwinutils.h>
+#include <jwinutils_deprecated.h>
 #include <fftw3.h>
 
 // JackUtils library usage example
@@ -42,7 +42,7 @@ void process(ju_ctx_t* ctx, size_t len) {
 
 static void loop(ju_ctx_t* ctx, ju_win_t* w);
 
-static int normalizer = 3; // best normalizer
+static int normalizer = 2; // best normalizer
 static int window     = 1; // ddefault window = gauss :D
 
 static void argp (char c, const char* arg) {
@@ -105,8 +105,13 @@ static void loop(ju_ctx_t* ctx, ju_win_t* w) {
 	ju_buff_unlock(&buff);
 
 	// apply window to signal
-	for (int i = 0; i < (int)sz; i++)
+	for (int i = 0; i < (int)sz; i++) {
 		tmp[i] *= windows[window](i, sz);
+		if (ABS(tmp[i]) > 1.0) { // cutoff
+			if (tmp[i] > 0.0f) tmp[i] = 1.0;
+			else tmp[i] = -1.0f;
+		}
+	}
 
 	// compute FFT
 	fftwf_plan plan;	
@@ -115,8 +120,7 @@ static void loop(ju_ctx_t* ctx, ju_win_t* w) {
 	fftwf_destroy_plan(plan);
 	// normalize spectrum
 	for (size_t i = 0; i < sz/2; i++)
-		freq[i] = ABS(freq[i]) / (float)sz * 3.1415;
-		//freq[i] = i/(sz/2.0f);
+		freq[i] = ABS(freq[i]) / (float)sz * PI;
 
 	// final normalizing
 	for (size_t i = 0; i < sz/2; i++)

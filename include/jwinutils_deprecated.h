@@ -1,5 +1,6 @@
 // Extension for jackutils library.
 // Hepls to manipulate windows. :D
+// THIS API IS DEPRECATED!
 // Copyright (C) UtoECat 2022
 // GNU GPL License. No Warrianty!
 

@@ -22,8 +22,10 @@ static void error_callback(int error, const char* description) {
     fprintf(stderr, "Error: %s\n", description);
 }
 
+// implement rendering
 #define NK_GLFW_GL3_IMPLEMENTATION
 #include <ext/nuklear_glfw_gl3.h>
+#include <ext/nuklear_image.h>
 
 /*
  * Initializes GUI context.
@@ -31,6 +33,14 @@ static void error_callback(int error, const char* description) {
  */
 
 static GLFWwindow* window;
+static struct nk_image    ju_image;
+
+// static const icon :)
+#include <ju_icon.h>
+
+JG_API struct nk_image jg_jackutils_icon(void) {
+	return ju_image;
+}
 
 JG_API jg_ctx_t* jg_init(const char* t, int w, int h) {
 	jg_ctx_t* ctx;
@@ -47,6 +57,7 @@ JG_API jg_ctx_t* jg_init(const char* t, int w, int h) {
 	window = glfwCreateWindow(w, h, t, NULL, NULL);
 	assert(window != NULL && "can't create glfw window!");
 	glfwMakeContextCurrent(window);
+	glfwSetWindowSizeLimits(window, 320, 240, GLFW_DONT_CARE, GLFW_DONT_CARE);
 
 	int width, height;
 	glfwGetWindowSize(window, &width, &height);
@@ -59,6 +70,11 @@ JG_API jg_ctx_t* jg_init(const char* t, int w, int h) {
     /*struct nk_font *droid = nk_font_atlas_add_from_file(atlas, "../../../extra_font/DroidSans.ttf", 14, 0);*/
 	nk_glfw3_font_stash_end();
 	/*nk_style_set_font(ctx, &droid->handle);*/
+
+	// init jackutils icon
+	ju_image = jg_image_load_from_memory(ju_icon_data, ju_icon_width, ju_icon_height, ju_icon_channels);
+	if (!ju_image.handle.id)
+		perror("[jackgui] Can't load jackutils icon!");
 	return ctx;
 }
 
@@ -66,6 +82,7 @@ JG_API jg_ctx_t* jg_init(const char* t, int w, int h) {
  * Destroys GUI context
  */
 JG_API void      jg_uninit(jg_ctx_t* ctx) {
+	jg_image_free(ju_image);
 	nk_glfw3_shutdown();
 }
 
@@ -83,10 +100,10 @@ JG_API int  jg_begin(jg_ctx_t* ctx) {
 	area = nk_rect(0.f, 0.f, (float) width, (float) height);
 
 	nk_glfw3_new_frame();
-	return nk_begin(ctx, "", area, 0);
+	return nk_begin(ctx, "", area, NK_WINDOW_BACKGROUND | NK_WINDOW_SCROLL_AUTO_HIDE);
 }
 
-#define MAX_VERTEX_BUFFER 512 * 1024
+#define MAX_VERTEX_BUFFER 1024 * 1024
 #define MAX_ELEMENT_BUFFER 128 * 1024
 
 JG_API void jg_end(jg_ctx_t* ctx) {
@@ -113,3 +130,10 @@ JG_API int  jg_should_close(jg_ctx_t*) {
 JG_API void jg_request_redraw(jg_ctx_t*) {
 	glfwPostEmptyEvent();
 }
+
+
+
+JG_API struct nk_image jg_image_load_from_memory(const unsigned char *ptr, int w, int h, int ch);
+JG_API void jg_image_free(struct nk_image img);
+
+

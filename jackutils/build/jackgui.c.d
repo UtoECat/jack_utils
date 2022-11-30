@@ -8,7 +8,7 @@ build/./jackgui.c.o: jackgui.c \
  /home/utoecat/Projects/JACKUTILS/include/jackgui.h \
  /home/utoecat/Projects/JACKUTILS/include/ext/gl.h \
  /home/utoecat/Projects/JACKUTILS/include/ext/nuklear.h \
- ext/nuklear_glfw_gl3.h
+ ext/nuklear_glfw_gl3.h ext/nuklear_image.h ju_icon.h
 /home/utoecat/Projects/JACKUTILS/include/jackutils.h:
 /home/utoecat/Projects/JACKUTILS/include/ju_defs.h:
 /home/utoecat/Projects/JACKUTILS/include/ju_buffer.h:
@@ -19,3 +19,5 @@ build/./jackgui.c.o: jackgui.c \
 /home/utoecat/Projects/JACKUTILS/include/ext/gl.h:
 /home/utoecat/Projects/JACKUTILS/include/ext/nuklear.h:
 ext/nuklear_glfw_gl3.h:
+ext/nuklear_image.h:
+ju_icon.h:

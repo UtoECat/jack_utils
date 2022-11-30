@@ -57,3 +57,24 @@ struct waveinfo waveinfo_default();
 
 void jg_waveview(jg_ctx_t* ctx, float* arr, size_t len, struct waveinfo*);
 void jg_waveedit(jg_ctx_t* ctx, float* arr, size_t len, struct waveinfo*);
+
+/*
+ * Float whell widget.
+ */
+int jg_whell_float(jg_ctx_t* ctx, float* value, float min, float step, float max);
+
+/*
+ * Image load/free functions.
+ *
+ * WARNING! Creating image from same texture will generate NEW IMAGE in gpu!
+ * Also, there is no way to reference count this images :(
+ * So, be careful, and create images before main loop, and free after
+ */
+
+JG_API struct nk_image jg_image_load_from_memory(const unsigned char *ptr, int w, int h, int channels);
+JG_API void jg_image_free(struct nk_image img);
+
+/*
+ * Returns constant jackutils icon.
+ */
+JG_API struct nk_image jg_jackutils_icon(void);

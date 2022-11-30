@@ -12,7 +12,7 @@ OBJS := $(SRCS:%=$(BUILD_DIR)/%.o)
 DEPS := $(OBJS:.o=.d)
 
 INC_FLAGS := $(addprefix -I,$(INCLUDE_DIRS))
-UNIFLAGS ?= -O2 -fsanitize=undefined -Wall -Wextra -flto
+UNIFLAGS ?= -O0 -fsanitize=undefined -Wall -Wextra
 LINFLAGS += $(INCLUDE_LIBS) 
 CMPFLAGS ?= $(INC_FLAGS) -MMD -MP $(UNIFLAGS) -std=gnu11 
 CXXFLAGS ?= $(INC_FLAGS) -MMD -MP $(UNIFLAGS) -std=gnu++20 -fno-exceptions

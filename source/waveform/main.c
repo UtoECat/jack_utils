@@ -4,7 +4,7 @@
 // No any warrianty!
 
 #include <jackutils.h>
-#include <jwinutils_deprecated.h>
+#include <jackgui.h>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -37,7 +37,7 @@ static void process(ju_ctx_t* ctx, size_t len) {
 	ju_buff_unlock(&buff);
 }
 
-static void loop(ju_ctx_t* ctx, ju_win_t* w);
+static void loop(ju_ctx_t* ctx, jg_ctx_t* gui);
 
 int main(int argc, char** argv) {
 	ja_parse(argc, argv, NULL, NULL);
@@ -46,37 +46,43 @@ int main(int argc, char** argv) {
 	printf("JACK Version : %s\n", ju_jack_info());
 	// open ports
 	port = ju_port_open(ctx, "input", JU_INPUT, 0);
-	// open window and cache buffers
-	ju_win_t* w = ju_win_open(640, 480);
-	ju_win_title(w, ju_get_name(ctx));
+	// open GUI and cache buffers
+	jg_ctx_t* gui = jg_init(ju_get_name(ctx), 640, 480);
 	oldsize = ju_length(ctx);
 	ju_buff_init(&buff, oldsize * sizeof(float));
 	// start processing
 	ju_start(ctx, process);
-	// and wait 'till server dies or window will be closed xD
-	while (!ju_win_should_close(w) && ju_is_online(ctx, 0)) {
-		loop(ctx, w);
+	// and wait 'till server dies or GUI will be closed xD
+	fprintf(stderr, "Init success!\n");
+	while (!jg_should_close(gui) && ju_is_online(ctx, 0)) {
+		jg_begin(gui);
+		loop(ctx, gui);
+		jg_end(gui);
 	}
 	// free context (and window... and buffer xD)
 	// context will be already stopped in case of server disconnect
-	ju_win_close(w);
+	jg_uninit(gui);
 	ju_ctx_uninit(ctx);
 	ju_buff_uninit(&buff);
 }
 
-static void loop(ju_ctx_t* ctx, ju_win_t* w) {
-	double dt = ju_draw_begin(w);
-	w_wh_t ws = ju_win_size(w);
-
-	// to prevent data racing
+static void loop(ju_ctx_t* ctx, jg_ctx_t* gui) {
+	// get data
 	ju_buff_lock(&buff);
 	size_t sz = oldsize;
 	float tmp[sz];
 	memcpy(tmp, ju_buff_data(&buff), sizeof(float) * sz);
 	ju_buff_unlock(&buff);
-	glColor3f(0.2,0,0);
-	ju_draw_grid(20,20,0,0,ws.w, ws.h);
-	glColor3f(1,1,1);
-	ju_draw_samples(tmp, sz, 0, ws.h/2, ws.w, ws.h/2);
-	ju_win_pool_events();
+
+	nk_layout_row_dynamic(gui, 30, 2);
+	nk_label(gui, "(JackUtils) : Waveform visualizer", NK_TEXT_LEFT);
+	nk_button_label(gui, "button");
+	struct waveinfo info = {-1, 1, 0, 0, 1, 1};
+	nk_layout_row_dynamic(gui, nk_window_get_content_region(gui).h - 42, 1);
+	jg_waveview(gui, tmp, sz, &info);
+	
+	if (ju_port_connected(ctx, port))
+		jg_request_redraw(gui); // if we have any data :)
 }
+
+

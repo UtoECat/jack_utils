@@ -1,10 +1,10 @@
 #define NK_INCLUDE_FIXED_TYPES
-#define NK_INCLUDE_FONT_BAKING
-#define NK_INCLUDE_DEFAULT_FONT
+#define NK_INCLUDE_STANDARD_IO
+#define NK_INCLUDE_STANDARD_VARARGS
 #define NK_INCLUDE_DEFAULT_ALLOCATOR
 #define NK_INCLUDE_VERTEX_BUFFER_OUTPUT
-#define NK_INCLUDE_STANDARD_VARARGS
-#define NK_BUTTON_TRIGGER_ON_RELEASE
+#define NK_INCLUDE_FONT_BAKING
+#define NK_INCLUDE_DEFAULT_FONT
 /*
 /// # Nuklear
 /// ![](https://cloud.githubusercontent.com/assets/8057201/11761525/ae06f0ca-a0c6-11e5-819d-5610b25f6ef4.gif)
@@ -311,7 +311,6 @@ extern "C" {
 #define NK_CLAMP(i,v,x) (NK_MAX(NK_MIN(v,x), i))
 
 #ifdef NK_INCLUDE_STANDARD_VARARGS
-  #include <stdarg.h> /* valist, va_start, va_end, ... */
   #if defined(_MSC_VER) && (_MSC_VER >= 1600) /* VS 2010 and above */
     #include <sal.h>
     #define NK_PRINTF_FORMAT_STRING _Printf_format_string_
@@ -5712,6 +5711,9 @@ template<typename T> struct nk_alignof{struct Big {T x; char c;}; enum {
 #endif
 #ifdef NK_INCLUDE_STANDARD_IO
 #include <stdio.h> /* fopen, fclose,... */
+#endif
+#ifdef NK_INCLUDE_STANDARD_VARARGS
+#include <stdarg.h> /* valist, va_start, va_end, ... */
 #endif
 #ifndef NK_ASSERT
 #include <assert.h>

@@ -31,7 +31,7 @@ JG_API void jg_uninit(jg_ctx_t*);
  * @ret 1 on sucess. Else you must not enumerate anything!
  */
 JG_API int  jg_begin(jg_ctx_t*);
-JG_API void jg_end(jg_ctx_t*);
+JG_API void jg_end(jg_ctx_t*, int mul);
 
 JG_API int  jg_should_close(jg_ctx_t*);
 

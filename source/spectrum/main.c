@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
 	while (!jg_should_close(gui) && ju_is_online(ctx, 0)) {
 		jg_begin(gui);
 		loop(ctx, gui);
-		jg_end(gui);
+		jg_end(gui, 1);
 	}
 	// free context (and window... and buffer xD)
 	// context will be already stopped in case of server disconnect
@@ -107,12 +107,12 @@ static void loop(ju_ctx_t* ctx, jg_ctx_t* gui) {
 	fftwf_destroy_plan(plan);
 	// normalize spectrum
 	for (size_t i = 0; i < sz/2; i++)
-		freq[i] = ABS(freq[i]) / (float)sz * PI;
+		freq[i] = ABS(freq[i]) / (float)sz * PI * 2;
 
 	// final normalizing
 	for (size_t i = 0; i < sz/2; i++) {
 		size_t indx = i;
-		if (logvalx > 1) indx = _logindex(i, sz, logvalx);
+		if (logvalx > 1) indx = _logindex(i, sz/2, logvalx);
 		if (logvaly > 1)
 			tmp[i] = logone(freq[indx], logvaly);
 		else
@@ -130,9 +130,9 @@ static void loop(ju_ctx_t* ctx, jg_ctx_t* gui) {
 			// setup template layout
 			nk_layout_row_template_begin(gui, 40);
 			nk_layout_row_template_push_variable(gui, 80);
-			nk_layout_row_template_push_static(gui, 40);
-			nk_layout_row_template_push_static(gui, 40);
-			nk_layout_row_template_push_static(gui, 40);
+			nk_layout_row_template_push_static(gui, 80);
+			nk_layout_row_template_push_static(gui, 50);
+			nk_layout_row_template_push_static(gui, 50);
 			nk_layout_row_template_push_static(gui, 80);
 			nk_layout_row_template_end(gui);
 			
@@ -142,11 +142,11 @@ static void loop(ju_ctx_t* ctx, jg_ctx_t* gui) {
 			static float val = 0;
 			nk_combobox(gui, window_names, 4, &window, nk_widget_height(gui), nk_vec2(nk_widget_width(gui), 300));
 			val = logvalx;
-			if (jg_whell_float(gui, &val, 1, 0.1, 20)) {
+			if (jg_whell_float(gui, &val, 1, 0.1, 100)) {
 				logvalx = val;
 			}
 			val = logvaly;
-			if (jg_whell_float(gui, &val, 1, 0.1, 20)) {
+			if (jg_whell_float(gui, &val, 1, 0.1, 100)) {
 				logvaly = val;
 			}
 			// end of wheels
@@ -156,9 +156,9 @@ static void loop(ju_ctx_t* ctx, jg_ctx_t* gui) {
 			// second layout
 			nk_layout_row_template_begin(gui, 10);
 			nk_layout_row_template_push_variable(gui, 80);
-			nk_layout_row_template_push_static(gui, 40);
-			nk_layout_row_template_push_static(gui, 40);
-			nk_layout_row_template_push_static(gui, 40);
+			nk_layout_row_template_push_static(gui, 80);
+			nk_layout_row_template_push_static(gui, 50);
+			nk_layout_row_template_push_static(gui, 50);
 			nk_layout_row_template_push_static(gui, 80);
 			nk_layout_row_template_end(gui);
 			// second layer

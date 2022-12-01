@@ -58,7 +58,7 @@ int main(int argc, char** argv) {
 	while (!jg_should_close(gui) && ju_is_online(ctx, 0)) {
 		jg_begin(gui);
 		loop(ctx, gui);
-		jg_end(gui);
+		jg_end(gui, 1);
 	}
 	// free context (and window... and buffer xD)
 	// context will be already stopped in case of server disconnect

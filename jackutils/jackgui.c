@@ -103,10 +103,10 @@ JG_API int  jg_begin(jg_ctx_t* ctx) {
 	return nk_begin(ctx, "", area, NK_WINDOW_BACKGROUND | NK_WINDOW_SCROLL_AUTO_HIDE);
 }
 
-#define MAX_VERTEX_BUFFER 1024 * 1024
-#define MAX_ELEMENT_BUFFER 128 * 1024
+#define MAX_VERTEX_BUFFER  512 * 1024
+#define MAX_ELEMENT_BUFFER 512 * 1024
 
-JG_API void jg_end(jg_ctx_t* ctx) {
+JG_API void jg_end(jg_ctx_t* ctx, int mul) {
 	nk_end(ctx);
 	
 	int width, height;
@@ -118,7 +118,7 @@ JG_API void jg_end(jg_ctx_t* ctx) {
 	glClearColor(0,0,0,1);
 	area = nk_rect(0.f, 0.f, (float) width, (float) height);
 
-	nk_glfw3_render(NK_ANTI_ALIASING_ON, MAX_VERTEX_BUFFER, MAX_ELEMENT_BUFFER);
+	nk_glfw3_render(NK_ANTI_ALIASING_ON, MAX_VERTEX_BUFFER * mul, MAX_ELEMENT_BUFFER * mul);
 	glfwSwapBuffers(window);
 	glfwWaitEventsTimeout(1.0);
 }

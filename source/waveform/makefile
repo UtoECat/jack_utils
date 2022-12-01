@@ -19,7 +19,7 @@ CXXFLAGS ?= $(INC_FLAGS) -MMD -MP $(UNIFLAGS) -std=gnu++20 -fno-exceptions
 
 SHRDLIBS  = -lm -ljack -lglfw -lGL
 
-$(BINARY_DIR)/$(TARGET): $(OBJS)
+$(BINARY_DIR)/$(TARGET): $(OBJS) $(INCLUDE_LIBS)
 	@echo "$@ in path $(BINARY_DIR)"
 	$(MKDIR_P) $(dir $@)
 	$(CXX) $(OBJS) -o $@ $(SHRDLIBS) $(UNIFLAGS) $(LINFLAGS)

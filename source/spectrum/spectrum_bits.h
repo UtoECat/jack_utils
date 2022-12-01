@@ -14,6 +14,7 @@ static size_t _logindex(size_t i, size_t s, float n) {
 	f = 1 - f;
 	float r = logn(f*n + 1, n)/logn(n + 1.0f, n);
 	r = 1 - r;
+	if (r >= 1) return s-1;
 	return (size_t)(r * s);
 }
 

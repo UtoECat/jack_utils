@@ -83,6 +83,26 @@ static int jg_check_and_get(jg_ctx_t* ctx, struct nk_command_buffer** cnv, struc
 	return 1;
 }
 
+static inline void getlimarr(float* arr, size_t cnt, float* min, float* max) {
+	if (!cnt) {
+		*min = 0;
+		*max = 0;
+		return;				
+	};
+	*min = arr[0];
+	*max = arr[0];
+	for (size_t i = 1; i < cnt; i++) {
+		if (arr[i] < *min) *min = arr[i];
+		if (arr[i] > *max) *max = arr[i];
+	}
+}
+
+static inline float limitf(float v, float min, float max) {
+	if (v < min) return min;
+	if (v > max) return max;
+	return v;
+}
+
 void jg_waveview(jg_ctx_t* ctx, float* arr, size_t sz, struct waveinfo* info) {
 	if (!ctx || !arr || !sz || !info || info->max < info->min) return;
 
@@ -106,8 +126,32 @@ void jg_waveview(jg_ctx_t* ctx, float* arr, size_t sz, struct waveinfo* info) {
 	for (int i = 0; i < height; i += BG_CELL_MIN_PIXELS) {
 		nk_stroke_line(canvas, space.x, space.y + i, space.x + space.w, space.y + i, 1, BG_CELL_COLOR);
 	}
+	// new optimized drawing algo
+
 	// get first vertex
-	float oldx = space.x, oldy = space.y + height - (arr[0] - info->min)/range * height;
+	size_t oldindx = 0;
+	float oldx = space.x;
+	float oldmax = arr[0];
+
+	for (float i = 1; i < width; i += 1) { // optimitsation
+		size_t indx = i/width * sz;
+		float x = i + space.x;
+
+		// minimal and maximum values in current values range
+		float minv, maxv;
+		getlimarr(arr + oldindx, indx - oldindx, &minv, &maxv);
+		minv = limitf(minv, info->min, info->max);
+		maxv = limitf(maxv, info->min, info->max);
+		// setup points
+		float y1 = space.y + height - (maxv - info->min)/range * height;
+		float y2 = space.y + height - (oldmax - info->min)/range * height;
+		nk_stroke_line(canvas, oldx, y2, x, y1, 1, FG_LINE_COLOR);
+		oldindx = indx;
+		oldmax = maxv;
+		oldx = x;
+	}
+
+	/*
 	// and draw all other
 	for (size_t i = 1; i < sz; i++) {
 		float x = (i / (float)sz) * width + space.x;
@@ -115,7 +159,7 @@ void jg_waveview(jg_ctx_t* ctx, float* arr, size_t sz, struct waveinfo* info) {
 		float y = space.y + height - (v - info->min)/range * height;
 		nk_stroke_line(canvas, oldx, oldy, x, y, 2, FG_LINE_COLOR);
 		oldx = x; oldy = y;
-	}
+	}*/
 	return; // success
 }
 

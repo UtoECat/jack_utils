@@ -142,11 +142,11 @@ static void loop(ju_ctx_t* ctx, jg_ctx_t* gui) {
 			static float val = 0;
 			nk_combobox(gui, window_names, 4, &window, nk_widget_height(gui), nk_vec2(nk_widget_width(gui), 300));
 			val = logvalx;
-			if (jg_whell_float(gui, &val, 1, 0.1, 100)) {
+			if (jg_whell_float(gui, &val, 1, 2, 100)) {
 				logvalx = val;
 			}
 			val = logvaly;
-			if (jg_whell_float(gui, &val, 1, 0.1, 100)) {
+			if (jg_whell_float(gui, &val, 1, 2, 100)) {
 				logvaly = val;
 			}
 			// end of wheels

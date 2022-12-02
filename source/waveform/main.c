@@ -9,7 +9,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #define PROGRAM_NAME "waveform"
-#define PROGRAM_VERSION 0.1
+#define PROGRAM_VERSION 0.2
 #define PROGRAM_USAGE "waveform [-h] [-v]"
 #define PROGRAM_HELP  "Copyright (C) UtoECat 2022. All rights reserved!\n This program is free software. GNU GPL 3.0 License! No any Warrianty!"
 #include <ju_args.h>

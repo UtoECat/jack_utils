@@ -83,16 +83,13 @@ static int jg_check_and_get(jg_ctx_t* ctx, struct nk_command_buffer** cnv, struc
 	return 1;
 }
 
-static inline void getlimarr(float* arr, size_t cnt, float* min, float* max) {
+static inline void getlimarr(float* arr, size_t cnt, float* max) {
 	if (!cnt) {
-		*min = 0;
 		*max = 0;
 		return;				
 	};
-	*min = arr[0];
 	*max = arr[0];
 	for (size_t i = 1; i < cnt; i++) {
-		if (arr[i] < *min) *min = arr[i];
 		if (arr[i] > *max) *max = arr[i];
 	}
 }
@@ -132,15 +129,16 @@ void jg_waveview(jg_ctx_t* ctx, float* arr, size_t sz, struct waveinfo* info) {
 	size_t oldindx = 0;
 	float oldx = space.x;
 	float oldmax = arr[0];
+	float step = width/(float)sz;
+	if (step < 1.0) step = 1.0;
 
-	for (float i = 1; i < width; i += 1) { // optimitsation
+	for (float i = 1; i < width; i += step) { // optimitsation
 		size_t indx = i/width * sz;
 		float x = i + space.x;
 
 		// minimal and maximum values in current values range
-		float minv, maxv;
-		getlimarr(arr + oldindx, indx - oldindx, &minv, &maxv);
-		minv = limitf(minv, info->min, info->max);
+		float maxv;
+		getlimarr(arr + oldindx, indx - oldindx, &maxv);
 		maxv = limitf(maxv, info->min, info->max);
 		// setup points
 		float y1 = space.y + height - (maxv - info->min)/range * height;

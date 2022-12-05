@@ -1,6 +1,7 @@
 ## About JackUtils
 # jackutils - what is this?
 Jackutils is a library and a set of useful utilities for the JACK. The library implements a simple api for managing connected ports using descriptors, connecting and checking whether the jack server is working, opening a glfw window and primitive drawing functions (for visualizations, optional)
+**LD_LIBRARY_PATH**
 ![example](doc/all_1.png)
 ## List of utilites
 

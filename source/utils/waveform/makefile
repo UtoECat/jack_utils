@@ -26,6 +26,6 @@ $(BUILD_DIR)/%.o: $(SOURCE_DIRS)/%.c
 	@$(MKDIR_P) $(dir $@)
 	$(CC) $(CCFLAGS) -c $< -o $@
 
-#-include $(DEPS)
+-include $(DEPS)
 
 MKDIR_P ?= mkdir -p

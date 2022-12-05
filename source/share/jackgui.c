@@ -18,7 +18,7 @@ static void glfwinit__() {
 	atexit(glfwTerminate);
 }
 
-static void error_callback(int error, const char* description) {
+static void error_callback(int, const char* description) {
     fprintf(stderr, "Error: %s\n", description);
 }
 
@@ -81,7 +81,7 @@ JG_API jg_ctx_t* jg_init(const char* t, int w, int h) {
 /*
  * Destroys GUI context
  */
-JG_API void      jg_uninit(jg_ctx_t* ctx) {
+JG_API void      jg_uninit(jg_ctx_t*) {
 	jg_image_free(ju_image);
 	nk_glfw3_shutdown();
 }
@@ -100,15 +100,138 @@ JG_API int  jg_begin(jg_ctx_t* ctx) {
 	area = nk_rect(0.f, 0.f, (float) width, (float) height);
 
 	nk_glfw3_new_frame();
-	return nk_begin(ctx, "", area, NK_WINDOW_BACKGROUND | NK_WINDOW_SCROLL_AUTO_HIDE);
+	return nk_begin(ctx, "", area, NK_WINDOW_BACKGROUND);
 }
 
 #define MAX_VERTEX_BUFFER  512 * 1024
 #define MAX_ELEMENT_BUFFER 512 * 1024
 
+static int show_about = 0;
+static int show_message = 0;
+static char messge_data[512] = {0};
+const int   popup_flags = NK_WINDOW_CLOSABLE | NK_WINDOW_SCALABLE | NK_WINDOW_MOVABLE | NK_WINDOW_BORDER | NK_WINDOW_TITLE;
+
+static void draw_text_lines(jg_ctx_t* gui, const char* txt) {
+	nk_layout_row_dynamic(gui, 15, 1);
+	size_t pos = 0, len = strlen(txt) + 1;
+	for (size_t i = pos; i < len; i++) if (txt[i] == '\n' || txt[i] == '\0') {
+		size_t cnt = i - pos;
+		char buff[cnt + 1];
+		memcpy(buff, txt + pos, cnt);
+		buff[cnt] = '\0';
+		nk_label(gui, buff, NK_TEXT_CENTERED);
+		pos = i + 1;
+	}
+}
+
+static void process_about(jg_ctx_t* gui) {
+	if (show_about) {
+		static struct nk_rect rect = {20, 20, 480, 320};
+		if (nk_begin(gui, "about", rect, popup_flags)) {
+
+
+			// draw icon
+			nk_layout_row_template_begin(gui, 64);
+			nk_layout_row_template_push_variable(gui, 80);
+			nk_layout_row_template_push_static(gui, 64);
+			nk_layout_row_template_push_variable(gui, 80);
+			nk_layout_row_template_end(gui);
+
+			nk_label(gui, "", NK_TEXT_CENTERED); // dummy
+			nk_image(gui, jg_jackutils_icon());
+			nk_label(gui, "", NK_TEXT_CENTERED); // dummy
+			
+			// draw basic info
+			nk_layout_row_dynamic(gui, 15, 1);
+			nk_labelf(gui, NK_TEXT_CENTERED, "%s v.%f", program_info.name, program_info.version);
+			nk_labelf(gui, NK_TEXT_CENTERED, "by %s", program_info.author);
+			nk_label(gui, "", NK_TEXT_CENTERED); // dummy
+
+			// select info tab
+			nk_layout_row_template_begin(gui, 25);
+			nk_layout_row_template_push_variable(gui, 32);
+			nk_layout_row_template_push_static(gui, 64);
+			nk_layout_row_template_push_static(gui, 64);
+			nk_layout_row_template_push_static(gui, 96);
+			nk_layout_row_template_push_variable(gui, 32);
+			nk_layout_row_template_end(gui);
+
+			nk_label(gui, "", NK_TEXT_CENTERED); // dummy
+			if (nk_button_label(gui, "About")) show_about = 1;
+			if (nk_button_label(gui, "License")) show_about = 2;
+			if (nk_button_label(gui, "Contributors")) show_about = 3;
+			nk_label(gui, "", NK_TEXT_CENTERED); // dummy
+
+			// draw info
+			nk_layout_row_dynamic(gui, 15, 1);
+			nk_label(gui, "", NK_TEXT_CENTERED); // dummy
+			if (show_about == 1) {
+				draw_text_lines(gui, program_info.description); 
+				// github button
+				nk_layout_row_template_begin(gui, 25);
+				nk_layout_row_template_push_variable(gui, 32);
+				nk_layout_row_template_push_static(gui, 128);
+				nk_layout_row_template_push_variable(gui, 32);
+				nk_layout_row_template_end(gui);
+
+				nk_label(gui, "", NK_TEXT_CENTERED);
+				if (nk_button_label(gui, "Get Source Code")) {
+					char buff[512];
+					snprintf(buff, 511, "xdg-open %s", program_info.source_url);
+					system(buff);
+				};
+				nk_label(gui, "", NK_TEXT_CENTERED);
+			}
+			else if (show_about == 2) draw_text_lines(gui, program_info.license); 
+			else {
+				const char** i = program_info.contributors;
+				nk_label(gui, "Contributors : ", NK_TEXT_CENTERED);
+				while(*i && **i) {
+					nk_label(gui, *i, NK_TEXT_CENTERED);
+					i++;
+				}
+			}
+		} else {
+			show_about = 0;
+		}
+		nk_end(gui);
+	}
+}
+
+static void process_message(jg_ctx_t* gui) {
+	if (show_message) {
+		static struct nk_rect rect = {20, 20, 480, 320};
+		if (nk_begin(gui, "message", rect, popup_flags)) {
+			nk_layout_row_dynamic(gui, 15, 1);
+			draw_text_lines(gui, messge_data);
+			// ok button
+			nk_layout_row_template_begin(gui, 25);
+			nk_layout_row_template_push_variable(gui, 32);
+			nk_layout_row_template_push_static(gui, 64);
+			nk_layout_row_template_push_variable(gui, 32);
+			nk_layout_row_template_end(gui);
+
+			nk_label(gui, "", NK_TEXT_CENTERED);
+			if (nk_button_label(gui, "Ok")) {
+				show_message = 0;
+				messge_data[0] = '\0';
+			};
+			nk_label(gui, "", NK_TEXT_CENTERED);
+		} else {
+			show_message = 0;
+			messge_data[0] = '\0';
+		}
+		nk_end(gui);
+	}
+}
+
 JG_API void jg_end(jg_ctx_t* ctx, int mul) {
 	nk_end(ctx);
-	
+
+	// draw special windows before stop :D
+	process_about(ctx);
+	process_message(ctx);
+
 	int width, height;
 	struct nk_rect area;
 	
@@ -123,6 +246,19 @@ JG_API void jg_end(jg_ctx_t* ctx, int mul) {
 	glfwWaitEventsTimeout(1.0);
 }
 
+JG_API void jg_show_message(jg_ctx_t*, const char* msg) {
+	size_t len = strlen(msg), currlen = strlen(messge_data);
+	if (len + currlen >= 511) len = 510 - currlen;
+	if (!len) return;
+	memcpy(messge_data + currlen, msg, len);
+	messge_data[currlen + len] = '\0';
+	show_message = 1;
+}
+
+JG_API void jg_show_about(jg_ctx_t*) {
+	show_about = 1;
+}
+
 JG_API int  jg_should_close(jg_ctx_t*) {
 	return glfwWindowShouldClose(window);
 }
@@ -130,8 +266,6 @@ JG_API int  jg_should_close(jg_ctx_t*) {
 JG_API void jg_request_redraw(jg_ctx_t*) {
 	glfwPostEmptyEvent();
 }
-
-
 
 JG_API struct nk_image jg_image_load_from_memory(const unsigned char *ptr, int w, int h, int ch);
 JG_API void jg_image_free(struct nk_image img);

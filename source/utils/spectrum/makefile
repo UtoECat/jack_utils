@@ -14,7 +14,7 @@ LINFLAGS += -L$(OUTPUT_DIR) $(SHRDLIBS)
 CCFLAGS  ?= -MMD -MP -std=gnu11 
 CCFLAGS  += $(INC_FLAGS) $(UNIFLAGS)
 
-SHRDLIBS  = -lm -ljack -lglfw -lGL -lfftw3 -lfftw3f -ljackutils
+SHRDLIBS  = -lm -ljack -lglfw -lGL -ljackutils -lfftw3 -lfftw3f
 
 $(OUTPUT_DIR)/$(TARGET): $(OBJS)
 	echo "[MAKE] $(OUTPUT_DIR)"
@@ -26,6 +26,6 @@ $(BUILD_DIR)/%.o: $(SOURCE_DIRS)/%.c
 	@$(MKDIR_P) $(dir $@)
 	$(CC) $(CCFLAGS) -c $< -o $@
 
-#-include $(DEPS)
+-include $(DEPS)
 
 MKDIR_P ?= mkdir -p

@@ -19,7 +19,7 @@
 static int buff_except(ju_buff_t* b, ju_ssize_t v) {
 	if (v > 0) { // overflow
 		// move backward
-		C(S,_move)(b, -v);
+		ju_buff_move(b, -v);
 #ifdef BUFFER_DEBUG
 		fprintf(stderr, "BUFF(%p) : Overflow %li (used %li)\n", b, v, b->pos);
 #endif
@@ -33,7 +33,7 @@ static int buff_except(ju_buff_t* b, ju_ssize_t v) {
 	}
 }
 
-JBU_API void C(S,_init  )(ju_buff_t* b, size_t s) {
+JBU_API void (ju_buff_init  )(ju_buff_t* b, size_t s) {
 	assert(b != NULL);
 	b->data = calloc(s, 1);
 	assert(b->data);
@@ -42,37 +42,46 @@ JBU_API void C(S,_init  )(ju_buff_t* b, size_t s) {
 	b->except = buff_except;
 	mtx_init(&b->lock, 0);
 }
-JBU_API void C(S,_uninit)(ju_buff_t* b) {
+JBU_API void (ju_buff_uninit)(ju_buff_t* b) {
 	free(b->data);
 	b->data = 0;
 	mtx_destroy(&b->lock);
 }
-JBU_API void C(S,_resize)(ju_buff_t* b, size_t s) {
+
+JBU_API void (ju_buff_resize)(ju_buff_t* b, size_t s) {
+	if (s == b->len) return;
 	b->data = realloc(b->data, 1 * s);
 	assert(b->data);
 	b->len = s;
 }
 
-JBU_API void C(S,_except)(ju_buff_t* b, int (*cb) (ju_buff_t*, ju_ssize_t)) {
+JBU_API void (ju_buff_check_size)(ju_buff_t* b, size_t s) {
+	if (s <= b->len) return;
+	b->data = realloc(b->data, 1 * s);
+	assert(b->data);
+	b->len = s;
+}
+
+JBU_API void (ju_buff_except)(ju_buff_t* b, int (*cb) (ju_buff_t*, ju_ssize_t)) {
 	b->except = cb;
 }
 
-JBU_API size_t C(S,_size)(ju_buff_t* b) {
+JBU_API size_t (ju_buff_size)(ju_buff_t* b) {
 	return b->len;
 }
-JBU_API size_t C(S,_used)(ju_buff_t* b) {
+JBU_API size_t (ju_buff_used)(ju_buff_t* b) {
 	return b->pos;
 }
-JBU_API size_t C(S,_space)(ju_buff_t* b){
+JBU_API size_t (ju_buff_space)(ju_buff_t* b){
 	return b->len - b->pos;
 }
 
-JBU_API size_t C(S,_append)(ju_buff_t* b, const void* src, size_t s) {
+JBU_API size_t (ju_buff_append)(ju_buff_t* b, const void* src, size_t s) {
 	s = MIN(s, b->len);
-	if (s > C(S,_space)(b)) {
-		if (b->except) b->except(b, s - C(S,_space)(b));
+	if (s > (ju_buff_space)(b)) {
+		if (b->except) b->except(b, s - (ju_buff_space)(b));
 		// if exception not fixed this
-		if (s > C(S,_space)(b)) s = C(S,_space)(b);
+		if (s > (ju_buff_space)(b)) s = (ju_buff_space)(b);
 	};
 	if (s == 0) return 0;
 	memcpy(b->data + b->pos, src, s);
@@ -80,12 +89,12 @@ JBU_API size_t C(S,_append)(ju_buff_t* b, const void* src, size_t s) {
 	return s;
 }
 
-JBU_API size_t C(S,_fill)(ju_buff_t* b, const void* src, size_t s, size_t n) {
+JBU_API size_t (ju_buff_fill)(ju_buff_t* b, const void* src, size_t s, size_t n) {
 	size_t ms = MIN(s * n, b->len);
-	if (ms > C(S,_space)(b)) {
-		if (b->except) b->except(b, ms - C(S,_space)(b));
+	if (ms > (ju_buff_space)(b)) {
+		if (b->except) b->except(b, ms - (ju_buff_space)(b));
 		// if exception not fixed this
-		if (ms > C(S,_space)(b)) ms = C(S,_space)(b);
+		if (ms > (ju_buff_space)(b)) ms = (ju_buff_space)(b);
 	};
 	n = ms / s; // new count
 	if (ms == 0) return 0;
@@ -95,7 +104,8 @@ JBU_API size_t C(S,_fill)(ju_buff_t* b, const void* src, size_t s, size_t n) {
 	return ms;
 }
 
-JBU_API size_t C(S,_remove)(ju_buff_t* b, void* dst, size_t s) {
+JBU_API size_t (ju_buff_remove)(ju_buff_t* b, void* dst, size_t s) {
+	size_t fulls = s;
 	s = MIN(s, b->len);
 	if (s > b->pos) {
 		if (b->except) b->except(b, (ju_ssize_t)b->pos - s);
@@ -104,10 +114,11 @@ JBU_API size_t C(S,_remove)(ju_buff_t* b, void* dst, size_t s) {
 	}
 	if (s == 0) return 0;
 	memcpy(dst, b->data, s);
-	C(S,_move)(b, -((ju_ssize_t)s));
+	memset(dst + fulls - s, 0, fulls - s);
+	(ju_buff_move)(b, -((ju_ssize_t)s));
 	return s;
 }
-JBU_API void   C(S,_move  )(ju_buff_t* b, ju_ssize_t v) {
+JBU_API void   (ju_buff_move  )(ju_buff_t* b, ju_ssize_t v) {
 	if (v > (ju_ssize_t)b->len) v = b->len;
 	if (-v > (ju_ssize_t)b->pos) v = -b->pos;
 	
@@ -122,19 +133,19 @@ JBU_API void   C(S,_move  )(ju_buff_t* b, ju_ssize_t v) {
 
 #include <unistd.h>
 
-JBU_API size_t C(S,_read )(ju_buff_t* b, int fd, size_t s) {
+JBU_API size_t (ju_buff_read )(ju_buff_t* b, int fd, size_t s) {
 	s = MIN(s, b->len);
-	if (s > C(S,_space)(b)) {
-		if (b->except) b->except(b, s - C(S,_space)(b));
+	if (s > (ju_buff_space)(b)) {
+		if (b->except) b->except(b, s - (ju_buff_space)(b));
 		// if exception not fixed this
-		if (s > C(S,_space)(b)) s = C(S,_space)(b);
+		if (s > (ju_buff_space)(b)) s = (ju_buff_space)(b);
 	};
 	if (s == 0) return 0;
 	ju_ssize_t r = read(fd, b->data + b->pos, s);
 	if (r > 0) b->pos += r;
 	return r;	
 }
-JBU_API size_t C(S,_write)(ju_buff_t* b, int fd, size_t s) {
+JBU_API size_t (ju_buff_write)(ju_buff_t* b, int fd, size_t s) {
 	s = MIN(s, b->len);
 	if (s > b->pos) {
 		if (b->except) b->except(b, (ju_ssize_t)b->pos - s);
@@ -143,18 +154,18 @@ JBU_API size_t C(S,_write)(ju_buff_t* b, int fd, size_t s) {
 	}
 	if (s == 0) return 0;
 	ju_ssize_t r = write(fd, b->data, s);
-	if (r > 0) C(S,_move)(b, -r);
+	if (r > 0) (ju_buff_move)(b, -r);
 	return r;
 }
 
-JBU_API void*   C(S,_data)(ju_buff_t* b) {
+JBU_API void*   (ju_buff_data)(ju_buff_t* b) {
 	return b->data;
 }
 
-JBU_API void   C(S,_lock)(ju_buff_t* b) {
+JBU_API void   (ju_buff_lock)(ju_buff_t* b) {
 	mtx_lock(&b->lock);
 }
-JBU_API void   C(S,_unlock)(ju_buff_t* b) {
+JBU_API void   (ju_buff_unlock)(ju_buff_t* b) {
 	mtx_unlock(&b->lock);
 }
 

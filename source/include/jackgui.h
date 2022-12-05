@@ -43,6 +43,18 @@ JG_API int  jg_should_close(jg_ctx_t*);
 JG_API void jg_request_redraw(jg_ctx_t*); 
 
 /*
+ * Notifies user with message. You need to call it ONCE!
+ * If you call it not once, old message will be concated with new :)
+ * Message will not be cleared until user not closes it :)
+ */
+JG_API void jg_show_message(jg_ctx_t*, const char* msg);
+
+/*
+ * this function called from jg_ju_bar :)
+ */
+JG_API void jg_show_about(jg_ctx_t*);
+
+/*
  * All other GUI functions are provided by nuklear API. :)
  */
 
@@ -54,9 +66,7 @@ struct waveinfo {
 };
 
 struct waveinfo waveinfo_default();
-
 void jg_waveview(jg_ctx_t* ctx, float* arr, size_t len, struct waveinfo*);
-void jg_waveedit(jg_ctx_t* ctx, float* arr, size_t len, struct waveinfo*);
 
 /*
  * Float whell widget.
@@ -66,8 +76,22 @@ int jg_whell_float(jg_ctx_t* ctx, float* value, float min, float step, float max
 /*
  * Custom top-level jackutils bar :)
  */
-int jg_bar_begin(jg_ctx_t* ctx, ju_ctx_t* cli, int count);
-int jg_bar_end(jg_ctx_t* ctx);
+struct jg_bar_item {
+	void (*cb_draw) (jg_ctx_t*, struct jg_bar_item*);
+	union {
+		void* p;
+	 	int i;
+		float n;	
+	}	data[5];
+	int width;
+	const char* desc;
+};
+
+struct jg_bar_item jg_float_item(const char* desc, float* val, float min, float step, float max);
+struct jg_bar_item jg_text_item(const char* desc, const char* text, int w);
+struct jg_bar_item jg_null_item();
+
+int jg_ju_topbar(jg_ctx_t* ctx, ju_ctx_t* cli, struct jg_bar_item* arr);
 
 /*
  * Image load/free functions.

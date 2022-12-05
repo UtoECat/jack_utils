@@ -15,6 +15,16 @@
 #define JU_WEAK
 
 typedef signed long ju_ssize_t;
-struct program_info {
 
+struct program_info {
+	const char* name;
+	const char* description;
+	const char* author;
+	const char* license;
+	const char** contributors;
+	float version;
+	const char* source_url;
 };
+
+// to make it simply acessable from ANYWHERE :D
+extern const struct program_info program_info;

@@ -286,3 +286,90 @@ int jg_whell_float(jg_ctx_t* ctx, float* value, float min, float step, float max
         nk_fill_rect(out, bounds, 0, color);
         g->slots[slot].index += 1;
         return ret; */
+
+/*
+ * Custom top-level jackutils bar :)
+ */
+
+#define arr_foreach(arr) for (struct jg_bar_item* pos = arr; pos->cb_draw != NULL; pos++)
+
+int jg_ju_topbar(jg_ctx_t* gui, ju_ctx_t* cli, struct jg_bar_item* arr) {
+	if (!arr || !gui || !cli) return 0;
+
+	nk_layout_row_begin(gui, NK_STATIC, 72, 2);
+	nk_layout_row_push(gui, 72);
+	nk_image(gui, jg_jackutils_icon());
+	nk_layout_row_push(gui, nk_window_get_content_region(gui).w - 72 - 12);
+	// top group after icon
+	nk_group_begin(gui, "top-group", 0);
+		// setup template layout
+		nk_layout_row_template_begin(gui, 40);
+		nk_layout_row_template_push_variable(gui, 80);
+		arr_foreach(arr) {	
+			nk_layout_row_template_push_static(gui, pos->width);
+		}
+		nk_layout_row_template_push_static(gui, 80);
+		nk_layout_row_template_end(gui);
+			// first layer
+			nk_labelf(gui, NK_TEXT_CENTERED, "(Jackutils) : %s", program_info.name);
+			arr_foreach(arr) {	
+				pos->cb_draw(gui, pos);
+			}
+			if (nk_button_label(gui, "About")) {
+				jg_show_about(gui);
+			};
+			// second layout
+			nk_layout_row_template_begin(gui, 10);
+			nk_layout_row_template_push_variable(gui, 80);
+			arr_foreach(arr) {	
+				nk_layout_row_template_push_static(gui, pos->width);
+			}
+			nk_layout_row_template_push_static(gui, 80);
+			nk_layout_row_template_end(gui);
+			// second layer
+			if (ju_is_online(cli, 0))
+			nk_labelf(gui, NK_TEXT_CENTERED, "Jack : [%s, length=%li]", ju_jack_info(), ju_length(cli));
+			else nk_label(gui, "Jack : OFFLINE!", NK_TEXT_CENTERED);
+			arr_foreach(arr) {
+				nk_label(gui, pos->desc, NK_TEXT_CENTERED);
+			}
+			nk_labelf(gui, NK_TEXT_CENTERED, "v.%0.1f", program_info.version);
+		nk_group_end(gui);
+	nk_layout_row_end(gui);
+	return 0;
+}
+#undef arr_foreach
+
+struct jg_bar_item jg_null_item() {
+	return (struct jg_bar_item){NULL, {NULL}, 0, NULL};
+}
+
+static void cb_float(jg_ctx_t* gui, struct jg_bar_item* i) {
+	jg_whell_float(gui, (float*)i->data[0].p, i->data[1].n, i->data[2].n, i->data[3].n);
+}
+
+struct jg_bar_item jg_float_item(const char* desc, float* val, float min, float step, float max) {
+	struct jg_bar_item i = jg_null_item();
+	i.cb_draw = cb_float;
+	i.data[0].p = val;
+	i.data[1].n = min;
+	i.data[2].n = step;
+	i.data[3].n = max;
+	i.width = 45;
+	i.desc = desc ? desc : "(null)";
+	return i;
+}
+
+static void cb_text(jg_ctx_t* gui, struct jg_bar_item* i) {
+	nk_label(gui, (char*)i->data[0].p, NK_TEXT_CENTERED);
+}
+
+struct jg_bar_item jg_text_item(const char* desc, const char* text, int w) {
+	struct jg_bar_item i = jg_null_item();
+	i.cb_draw = cb_text;
+	i.data[0].p = text;
+	i.width = w;
+	i.desc = desc ? desc : "(null)";
+	return i;
+}
+

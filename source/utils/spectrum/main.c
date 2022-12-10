@@ -123,11 +123,20 @@ static void loop(ju_ctx_t* ctx, jg_ctx_t* gui) {
 	fftwf_destroy_plan(plan);
 
 	// normalize spectrum
+	size_t oldindx = 0;
 	for (size_t i = 0; i < sz/2; i++) {
-		// normalize by x and get
+		// normalize by x
 		size_t indx = i;
 		if (logx > 1.0f) indx = logindex(i, sz/2, logx);
-		tmp[i] = ABS(fft[indx]) / (float)sz * PI * 2;
+		// get
+		float value = 0, norm = 0;
+		// find biggest value between old and new index
+		for (size_t j = oldindx; j <= indx; j++) {
+			const float preval = ABS(fft[j]) / (float)sz * PI * 2;
+			if (preval > value) value = preval;
+		}
+		oldindx = indx;
+		tmp[i] = value;
 		// normalize by y
 		if (logy > 1.0f) tmp[i] = logone(tmp[i], logy);
 	}

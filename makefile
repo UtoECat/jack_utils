@@ -14,7 +14,7 @@ BUILD_DIR    := $(realpath .)/build
 INCLUDE_DIR  := $(realpath ./source/include)
 
 UNIFLAGS     ?= -O2 -fsanitize=undefined -fsanitize=address -Wall -Wextra
-CCFLAGS      ?= -std=c11 -MMD -MP
+CCFLAGS      ?= -std=gnu17 -MMD -MP
 
 CNUL = \033[0m
 CERR = \033[0;31m

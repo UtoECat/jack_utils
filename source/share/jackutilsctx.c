@@ -58,19 +58,28 @@ static void (ju_close_check) (jack_port_id_t, jack_port_id_t b, int connect, voi
 	}
 }
 
-// API
 
-JU_API ju_ctx_t* (ju_ctx_init)  (ju_cstr_t name, ju_cstr_t server) {
+int ju_internal_try_osc(ju_ctx_t* p, const char** name, const char* argv0, int has_gui);
+
+// API
+JU_API ju_ctx_t* (ju_ctx_init) (ju_cstr_t name, ju_cstr_t argv0, int has_gui) {
 	jack_status_t st;
-	name = name ? name : "unnamed";
-	jack_client_t* cli = jack_client_open(name, server?JackServerName : JackNullOption, &st, server ? server : "default");
-	if (!cli) {
-		error("Can't open jack client!", st);
-		return NULL;
-	}
+	assert(name && argv0);
+
 	ju_ctx_t* p = calloc(sizeof(ju_ctx_t), 1);
 	if (!p) {
 		error("Memory allocation error!", 0);
+		return NULL;
+	}
+	p->osc = NULL;
+	p->session_path = NULL;
+	if (ju_internal_try_osc(p, &name, argv0, has_gui)) {
+		fprintf(stderr, "JACK: sucessfully connected to session manager!\n");				
+	};
+
+	jack_client_t* cli = jack_client_open(name, JackNullOption, &st);
+	if (!cli) {
+		error("Can't open jack client!", st);
 		return NULL;
 	}
 	p->client = cli;
@@ -90,14 +99,20 @@ JU_API ju_ctx_t* (ju_ctx_init)  (ju_cstr_t name, ju_cstr_t server) {
 	jack_set_port_connect_callback(p->client, ju_close_check, p);
 	return p;
 }
+
+void ju_internal_free_osc(ju_ctx_t*);
+
 JU_API void (ju_ctx_uninit) (ju_ctx_t* p) {
 	// close port is user don't do that :p
 	int test = mtx_trylock(&p->works);
 	if (test != 0) jack_deactivate(p->client); // if working 
 	mtx_unlock(&p->works);
 
+	// free session manager
+	ju_internal_free_osc(p);
+
 	// close ports
-	jack_port_unregister(p->client, p->close);
+	if (p->close) jack_port_unregister(p->client, p->close);
 	for (int i = 0; i <= p->last_port; i++) {
 		jack_port_t* t = PORTGETJ(p, i);
 		if (t && jack_port_is_mine(p->client, t) 
@@ -128,6 +143,7 @@ JU_API int  (ju_start) (ju_ctx_t* x, ju_process_func_t f) {
 	}
 	return jack_activate(x->client);
 }
+
 JU_API void (ju_stop)  (ju_ctx_t* x) {
 	int i = mtx_trylock(&x->works);
 	if (i != 0) jack_deactivate(x->client); // if working 

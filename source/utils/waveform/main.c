@@ -23,8 +23,8 @@ static void process(ju_ctx_t* ctx, size_t len) {
 static void loop(ju_ctx_t* ctx, jg_ctx_t* gui);
 struct jg_bar_item bar_items[2];
 
-int main(int, char**) {
-	ju_ctx_t* ctx = ju_ctx_init(program_info.name, NULL); // init jackutils
+int main(int, char** argv) {
+	ju_ctx_t* ctx = ju_ctx_init(program_info.name, argv[0], 1); // init jackutils
 	port = ju_port_open(ctx, "input", JU_INPUT, 0);
 	// init gui
 	jg_ctx_t* gui = jg_init(ju_get_name(ctx), 640, 480);
@@ -33,11 +33,13 @@ int main(int, char**) {
 	// init buffer
 	ju_buff_init(&buff, ju_length(ctx) * sizeof(float));
 	ju_start(ctx, process); // start jack
-	while (!jg_should_close(gui) && ju_is_online(ctx, 0)) {
-		jg_begin(gui);
-		jg_ju_topbar(gui, ctx, bar_items);
-		loop(ctx, gui);
+	while (ju_is_online(ctx, 0)) {
+		if (jg_begin(gui)) {
+			jg_ju_topbar(gui, ctx, bar_items);
+			loop(ctx, gui);
+		}
 		jg_end(gui, 1);
+		jg_sync_visibility(gui, ctx);
 	}
 	jg_uninit(gui);
 	ju_ctx_uninit(ctx);

@@ -33,7 +33,15 @@ JG_API void jg_uninit(jg_ctx_t*);
 JG_API int  jg_begin(jg_ctx_t*);
 JG_API void jg_end(jg_ctx_t*, int mul);
 
-JG_API int  jg_should_close(jg_ctx_t*);
+/*
+ * Synchronize window visibility with Session Manager.
+ */
+JG_API void jg_sync_visibility(jg_ctx_t* gui, ju_ctx_t* ctx);
+
+/*
+ * Shows or hides window
+ */
+JG_API void jg_set_visibility(jg_ctx_t*, int);
 
 /*
  * Your utilities redraws only when user interacts with window.

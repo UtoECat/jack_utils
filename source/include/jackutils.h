@@ -50,3 +50,4 @@ typedef size_t (ju_stream_func_t)(void*, ju_sample_t*, size_t);
 
 #include <ju_context.h>
 #include <ju_port.h>
+#include <ju_osc.h>

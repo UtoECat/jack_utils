@@ -30,6 +30,11 @@ static const size_t _power_table[13] = {
 	16, 32, 64, 128, 256, 512, 1024, 2048, 4096, 8192,
 	16384, 32768, 65536
 };
+
+static const char* _text_power_table[13] = {
+	"16", "32", "64", "128", "256", "512", "1024", "2048", 
+	"4096", "8192", "16384", "32768", "65536"
+};
 #define MAX_POWER 12
 
 
@@ -55,37 +60,60 @@ static size_t sp_buff_power = 9;
 static size_t sp_window = 1;
 static float  logx = 10.0f;
 static float  logy = 10.0f;
+static float  skipk = 1.0f;
+static float 	lenk = 9;
+
+static char curr_power_text[8] = "";
 
 static size_t get_size(void) {return _power_table[sp_buff_power];}
 
 static void process(ju_ctx_t* ctx, size_t len) {
 	ju_buff_lock(&buff);
-	size_t size = len * sizeof(float);
-	if (size < get_size()*sizeof(float)) size = get_size() * sizeof(float); 
-	ju_buff_resize(&buff, size);
-	ju_buff_append(&buff, ju_port_read(ctx, port), len*sizeof(float));
+	// oh no
+	sp_buff_power = lenk;
+	if (sp_buff_power > MAX_POWER) sp_buff_power = MAX_POWER;
+	//
+	size_t portblen = len;
+	size_t newblen = get_size();
+	newblen = portblen < newblen ? newblen : portblen; // MAX
+
+	size_t k = skipk;
+	const float* src = ju_port_read(ctx, port);
+	float tmp[len / k + 1]; 
+
+	for (int i = 0; i < len; i += k) {
+		tmp[i/k] = src[i];
+	}
+	if (ju_buff_size(&buff) < newblen * sizeof(float))
+		ju_buff_resize(&buff, newblen * sizeof(float));
+	ju_buff_append(&buff, tmp, len/k*sizeof(float));
 	ju_buff_unlock(&buff);
 }
 
 static void loop(ju_ctx_t* ctx, jg_ctx_t* gui);
-struct jg_bar_item bar_items[3];
+struct jg_bar_item bar_items[6];
 
-int main(int, char**) {
-	ju_ctx_t* ctx = ju_ctx_init(program_info.name, NULL); // init jackutils
+int main(int, char** argv) {
+	ju_ctx_t* ctx = ju_ctx_init(program_info.name, argv[0], 1); // init jackutils
 	port = ju_port_open(ctx, "input", JU_INPUT, 0);
 	// init gui
 	jg_ctx_t* gui = jg_init(ju_get_name(ctx), 640, 480);
 	bar_items[0] = jg_float_item("log(x)", &logx, 1, 1, 100);
 	bar_items[1] = jg_float_item("log(y)", &logy, 1, 1, 100);
-	bar_items[2] = jg_null_item();
+	bar_items[2] = jg_float_item("skipk", &skipk, 1, 1, 6);
+	bar_items[3] = jg_float_item("length", &lenk, 1, 1, MAX_POWER);
+	bar_items[4] = jg_text_item("result", curr_power_text, 80);
+	bar_items[5] = jg_null_item();
 	// init buffer
 	ju_buff_init(&buff, ju_length(ctx) * sizeof(float));
 	ju_start(ctx, process); // start jack
-	while (!jg_should_close(gui) && ju_is_online(ctx, 0)) {
-		jg_begin(gui);
-		jg_ju_topbar(gui, ctx, bar_items);
-		loop(ctx, gui);
+	while (ju_is_online(ctx, 0)) {
+		if (jg_begin(gui)) {
+			jg_ju_topbar(gui, ctx, bar_items);
+			loop(ctx, gui);
+		}
 		jg_end(gui, 1);
+		jg_sync_visibility(gui, ctx);
 	}
 	jg_uninit(gui);
 	ju_ctx_uninit(ctx);
@@ -97,6 +125,7 @@ int main(int, char**) {
 static void loop(ju_ctx_t* ctx, jg_ctx_t* gui) {
 	// get data
 	ju_buff_lock(&buff);
+	memcpy(curr_power_text, _text_power_table[sp_buff_power], strlen(_text_power_table[sp_buff_power]) + 1);
 	size_t sz = get_size();
 	float tmp[sz], fft[sz];
 	// if has more data, than needed

@@ -33,6 +33,7 @@ static void error_callback(int, const char* description) {
  */
 
 static GLFWwindow* window;
+static int showed = 1;
 static struct nk_image    ju_image;
 
 // static const icon :)
@@ -75,6 +76,7 @@ JG_API jg_ctx_t* jg_init(const char* t, int w, int h) {
 	ju_image = jg_image_load_from_memory(ju_icon_data, ju_icon_width, ju_icon_height, ju_icon_channels);
 	if (!ju_image.handle.id)
 		perror("[jackgui] Can't load jackutils icon!");
+	showed = 1;
 	return ctx;
 }
 
@@ -82,6 +84,7 @@ JG_API jg_ctx_t* jg_init(const char* t, int w, int h) {
  * Destroys GUI context
  */
 JG_API void      jg_uninit(jg_ctx_t*) {
+	showed = 0;
 	jg_image_free(ju_image);
 	nk_glfw3_shutdown();
 }
@@ -93,6 +96,7 @@ JG_API void      jg_uninit(jg_ctx_t*) {
  * @ret 1 on sucess. Else you must not enumerate anything!
  */
 JG_API int  jg_begin(jg_ctx_t* ctx) {
+	if (!showed) return 0; // nothing showed
 	int width, height;
 	struct nk_rect area;
 	
@@ -226,6 +230,7 @@ static void process_message(jg_ctx_t* gui) {
 }
 
 JG_API void jg_end(jg_ctx_t* ctx, int mul) {
+	if (!showed) return;
 	nk_end(ctx);
 
 	// draw special windows before stop :D
@@ -259,8 +264,26 @@ JG_API void jg_show_about(jg_ctx_t*) {
 	show_about = 1;
 }
 
-JG_API int  jg_should_close(jg_ctx_t*) {
-	return glfwWindowShouldClose(window);
+JG_API void jg_sync_visibility(jg_ctx_t* gui, ju_ctx_t* ctx){
+	int val = ju_need_gui(ctx);
+	int req = glfwWindowShouldClose(window);
+	if (req) {
+		jg_set_visibility(gui, 0);
+		ju_set_gui(ctx, 0);
+		glfwSetWindowShouldClose(window, 0);
+		return;
+	}
+
+	// if difference
+	if (val != showed) {
+		jg_set_visibility(gui, val);
+	}
+}
+
+JG_API void jg_set_visibility(jg_ctx_t*, int b) {
+	if (b) glfwShowWindow(window);
+	else glfwHideWindow(window);
+	showed = b;
 }
 
 JG_API void jg_request_redraw(jg_ctx_t*) {

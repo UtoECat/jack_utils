@@ -23,6 +23,7 @@ struct ju_ctx_s {
 	// works - locked until ju_start called and ju_stop is not called
 	// mdata - lock for samplerate, sample buffers length
 	// mutex - locked while Jack Audio Process function is working :p
+	// init callback is successed
 	mtx_t mutex, works, mdata;
 	ju_process_func_t proc_cb;
 	// mdata protection begin
@@ -31,10 +32,12 @@ struct ju_ctx_s {
 	ju_uint8_t   connected_ports_cnt; // count of connected ports :)
 	ju_uint8_t   last_port;
 	ju_port_t    ports[JU_MAX_PORTS + 1];
-	// __ autoclose begin
-	size_t       ac_timeout;   // autoclose timeout in microsec (0 = disabled)
-	jack_time_t  ac_last_time; // last time autoclose checked (sec = 1000000)
-	// __autoclose end
+	// session manager
+	void* osc;
+	char* session_path; // malloc()'ed 
+	int   gui_showed;
+	int   gui_supported;
+	char* tmp; // don't use this!
 	// mdata protection end
 };
 

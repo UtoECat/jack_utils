@@ -40,6 +40,7 @@ int main(int, char** argv) {
 		}
 		jg_end(gui, 1);
 		jg_sync_visibility(gui, ctx);
+		ju_pool_events(ctx);
 	}
 	jg_uninit(gui);
 	ju_ctx_uninit(ctx);

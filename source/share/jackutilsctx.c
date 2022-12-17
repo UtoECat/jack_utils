@@ -95,8 +95,10 @@ JU_API ju_ctx_t* (ju_ctx_init) (ju_cstr_t name, ju_cstr_t argv0, int has_gui) {
 	jack_set_sample_rate_callback(p->client, ju_srcb, p);
 
 	//setup close port
-	p->close = jack_port_register(p->client, CLOSE_PORT_NAME, JACK_DEFAULT_AUDIO_TYPE, JackPortIsInput | JackPortIsTerminal, 0);
-	jack_set_port_connect_callback(p->client, ju_close_check, p);
+	if (!p->osc) {
+		p->close = jack_port_register(p->client, CLOSE_PORT_NAME, JACK_DEFAULT_AUDIO_TYPE, JackPortIsInput | JackPortIsTerminal, 0);
+		jack_set_port_connect_callback(p->client, ju_close_check, p);
+	}
 	return p;
 }
 

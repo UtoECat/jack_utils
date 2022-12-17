@@ -65,3 +65,5 @@ JU_API ju_cstr_t (ju_osc_info) (ju_ctx_t* ctx);
  * @ret path to load and save session data
  */
 JU_API ju_cstr_t (ju_osc_path) (ju_ctx_t* ctx);
+
+JU_API void (ju_pool_events) (ju_ctx_t*);

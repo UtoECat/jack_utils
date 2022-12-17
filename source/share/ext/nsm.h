@@ -461,6 +461,8 @@ nsm_set_broadcast_callback( nsm_client_t *nsm, nsm_broadcast_callback *broadcast
 /* OSC HANDLERS */
 /****************/
 
+// some modifications by UtoECat
+
 #undef OSC_REPLY
 #undef OSC_REPLY_ERR
 
@@ -584,6 +586,7 @@ NSM_EXPORT int _nsm_osc_session_is_loaded ( const char *path, const char *types,
         return 0;
 
     nsm->session_is_loaded( nsm->session_is_loaded_userdata );
+		OSC_REPLY("OK");
 
     return 0;
 }

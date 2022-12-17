@@ -36,11 +36,13 @@ static int cb_save (char**, void* ud) {
 }
 
 static void cb_show(void* ud) {
+	fprintf(stderr, "JACKUTILS: show message!\n");
 	ju_ctx_t* p = ((ju_ctx_t*)ud);
 	ju_set_gui(p, 1);
 }
 
 static void cb_hide(void* ud) {
+	fprintf(stderr, "JACKUTILS: hide message!\n");
 	ju_ctx_t* p = ((ju_ctx_t*)ud);
 	ju_set_gui(p, 0);
 }
@@ -64,6 +66,8 @@ int ju_internal_try_osc(ju_ctx_t* p, const char** name, const char* argv0, int h
 			p->gui_supported = 1;
 			nsm_set_show_callback(p->osc, cb_show, p);
 			nsm_set_hide_callback(p->osc, cb_hide, p);
+			if (has_gui == 1) nsm_send_is_shown(p->osc);
+			fprintf(stderr, "JACKUTILS : GUI is supported!\n");
 		}
 	} else {
 		fail :
@@ -112,11 +116,13 @@ JU_API void (ju_set_gui) (ju_ctx_t* p, int new) {
 	if (new == old) return;
 	if (new) {
 		assert(p->osc != NULL); // emmm... what are you doing? :D
+		fprintf(stderr, "JACKUTILS : Send that we are shown!\n");
 		nsm_send_is_shown(p->osc);
 	} else {
-		if (p->osc)
-		nsm_send_is_hidden(p->osc);
-		else ju_stop(p);
+		if (p->osc) {
+			fprintf(stderr, "JACKUTILS : Send that we are hidden!\n");
+			nsm_send_is_hidden(p->osc);
+		} else ju_stop(p);
 	}
 	return;
 }
@@ -143,7 +149,5 @@ JU_API ju_cstr_t (ju_osc_path) (ju_ctx_t* ctx) {
 
 JU_API void ju_pool_events(ju_ctx_t* ctx) {
 	if (!ctx || !ctx->osc) return;
-	mtx_lock(&ctx->mdata);
 	nsm_check_nowait(ctx->osc);
-	mtx_unlock(&ctx->mdata);
 }

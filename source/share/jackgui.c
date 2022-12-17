@@ -58,7 +58,7 @@ JG_API jg_ctx_t* jg_init(const char* t, int w, int h) {
 	window = glfwCreateWindow(w, h, t, NULL, NULL);
 	assert(window != NULL && "can't create glfw window!");
 	glfwMakeContextCurrent(window);
-	glfwSetWindowSizeLimits(window, 320, 240, GLFW_DONT_CARE, GLFW_DONT_CARE);
+	glfwSetWindowSizeLimits(window, 50, 50, GLFW_DONT_CARE, GLFW_DONT_CARE);
 
 	int width, height;
 	glfwGetWindowSize(window, &width, &height);
@@ -147,7 +147,7 @@ static void process_about(jg_ctx_t* gui) {
 			
 			// draw basic info
 			nk_layout_row_dynamic(gui, 15, 1);
-			nk_labelf(gui, NK_TEXT_CENTERED, "%s v.%f", program_info.name, program_info.version);
+			nk_labelf(gui, NK_TEXT_CENTERED, "%s v.%.1f", program_info.name, program_info.version);
 			nk_labelf(gui, NK_TEXT_CENTERED, "by %s", program_info.author);
 			nk_label(gui, "", NK_TEXT_CENTERED); // dummy
 

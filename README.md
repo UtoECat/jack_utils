@@ -7,7 +7,9 @@ Jackutils is a library and a set of useful utilities for the JACK. The library i
 - **libfftw** *(Fourie transform implementation)*
 - **JACK** *(Jack Audio Connection Kit)* **OR** **pipewire-jack**
 # List of utilites
-## Some simple utilities
+## Normalizer
+*(Sound modification utility)* Dynamicly normalizes volume.
+![normalizer](/doc/normalizer.png)
 ## Waveform
 *(visualization utility)*    
 ![waveform](/doc/waveform.png)

@@ -25,3 +25,4 @@ Jackutils is a library and a set of useful utilities for the JACK. The library i
 - Usage of ports at this moment is **TOTALLY NOT THREADSAFE**.
 - I need more tests in real problems, not for my toy needs. If you have any ideas and suggestions, write to Suggestions
 - Check is this readme is lexically correct. I hate google translator :D
+- Need more optimisation for rendering

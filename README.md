@@ -17,11 +17,9 @@ Jackutils is a library and a set of useful utilities for the JACK. The library i
 *(visualization utility)*    
 ![spectrum](/doc/spectrum.png)
 # real TODO and contributing
-- ~~Include nuklear library!~~ (done)
-- Move utilities documentation to separate file!
-- ~~Add new session manager support~~ (done)
+- Change the use of the nuklear library in favor of rendering only the helper UI, waveform and spectrum rendering should be done via a vertex array or at least glBegin/End
+- Add documentation build system!
+- Simplify and clean up the API from old functions, simplify the code of existing ones
 - C++ is a bullshit! Never tell me to rewrite codebase on C++ or i will take your soul. 
-- Any ideas for additional utilities?
 - Usage of ports at this moment is **TOTALLY NOT THREADSAFE**.
 - I need more tests in real problems, not for my toy needs. If you have any ideas and suggestions, write to Suggestions
-- Check is this readme is lexically correct. I hate google translator :D

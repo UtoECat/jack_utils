@@ -1,0 +1,4 @@
+-DDEBUG
+-I/usr/include/
+-I./source/include
+-I./source/share

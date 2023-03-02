@@ -17,6 +17,13 @@
 
 #pragma once
 
+/**
+ * @file ju_defs.h
+ * Main header file with general definitions for the JackUtils API.
+ * Included automaticlu by @ref jackutils.h file!
+ * @see jackutils.h
+ */
+
 #include <stddef.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -27,17 +34,23 @@
 #define JU_DEPRECATED
 #define JU_WEAK
 
+/**
+ * Signed size type.
+ */
 typedef signed long ju_ssize_t;
 
+/**
+ * Structure required for custom cllients, that uses jackutils!
+ * It provides libjackutils with general information about your program.
+ */
 struct program_info {
-	const char* name;
-	const char* description;
-	const char* author;
-	const char* license;
-	const char** contributors;
-	float version;
-	const char* source_url;
+	const char* name; /**< Name of your program. */
+	const char* description; /**< General description of your program. */
+	const char* author;  /**< Name of authors of your program. */
+	const char* license;  /**< License of your program. */
+	const char** contributors;  /**< Contributors of your program. (array of strings, terminated with NULL) */
+	float version;  /**< Version of your program. Only versions like number.number are supported! */
+	const char* source_url;  /**< Url to your project page, github, etc. */
 };
 
-// to make it simply acessable from ANYWHERE :D
-extern const struct program_info program_info;
+extern const struct program_info program_info; /**< to make it simply acessable from ANYWHERE :D */

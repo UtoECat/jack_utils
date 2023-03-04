@@ -61,16 +61,16 @@ JG_API jg_ctx_t* jg_init(const char* t, int w, int h) {
 	glfwSetErrorCallback(error_callback);
 	glfwinit__();
 
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
-	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, GALOGEN_API_VER_MAJ);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, GALOGEN_API_VER_MIN);
+	//glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
 #ifdef __APPLE__
 	glfwWindowHint(GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);
 #endif
 	window = glfwCreateWindow(w, h, t, NULL, NULL);
 	assert(window != NULL && "can't create glfw window!");
 	glfwMakeContextCurrent(window);
-	glfwSetWindowSizeLimits(window, 50, 50, GLFW_DONT_CARE, GLFW_DONT_CARE);
+	glfwSetWindowSizeLimits(window, 128, 128, GLFW_DONT_CARE, GLFW_DONT_CARE);
 
 	int width, height;
 	glfwGetWindowSize(window, &width, &height);
@@ -101,22 +101,28 @@ JG_API void      jg_uninit(jg_ctx_t*) {
 	nk_glfw3_shutdown();
 }
 
-/*
- * Starts GUI objects enumeration.
- * You must call jg_end() when you done
- *
- * @ret 1 on sucess. Else you must not enumerate anything!
- */
-JG_API int  jg_begin(jg_ctx_t* ctx) {
+const int   nonfull_flags = NK_WINDOW_SCALABLE | NK_WINDOW_MOVABLE | NK_WINDOW_BORDER | NK_WINDOW_TITLE;
+const int   popup_flags = NK_WINDOW_CLOSABLE | nonfull_flags;
+
+JG_API int  jg_begin(jg_ctx_t* ctx, int fullscreen) {
 	if (!showed) return 0; // nothing showed
 	int width, height;
-	struct nk_rect area;
-	
+	static struct nk_rect area = {0, 0, 480, 170};
 	glfwGetWindowSize(window, &width, &height);
-	area = nk_rect(0.f, 0.f, (float) width, (float) height);
+
+	if (fullscreen) {
+		area = nk_rect(0.f, 0.f, (float) width, (float) height);
+	}
+
+	glViewport(0, 0, width, height);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glClearColor(0,0,0,1);
 
 	nk_glfw3_new_frame();
-	return nk_begin(ctx, "", area, NK_WINDOW_BACKGROUND);
+	glfwMakeContextCurrent(window);
+
+
+	return nk_begin(ctx, "main", area, fullscreen ? NK_WINDOW_BACKGROUND : nonfull_flags);
 }
 
 #define MAX_VERTEX_BUFFER  512 * 1024
@@ -125,7 +131,7 @@ JG_API int  jg_begin(jg_ctx_t* ctx) {
 static int show_about = 0;
 static int show_message = 0;
 static char messge_data[512] = {0};
-const int   popup_flags = NK_WINDOW_CLOSABLE | NK_WINDOW_SCALABLE | NK_WINDOW_MOVABLE | NK_WINDOW_BORDER | NK_WINDOW_TITLE;
+
 
 static void draw_text_lines(jg_ctx_t* gui, const char* txt) {
 	nk_layout_row_dynamic(gui, 15, 1);
@@ -241,7 +247,7 @@ static void process_message(jg_ctx_t* gui) {
 	}
 }
 
-JG_API void jg_end(jg_ctx_t* ctx, int mul) {
+JG_API void jg_end(jg_ctx_t* ctx, int) {
 	if (!showed) return;
 	nk_end(ctx);
 
@@ -249,16 +255,7 @@ JG_API void jg_end(jg_ctx_t* ctx, int mul) {
 	process_about(ctx);
 	process_message(ctx);
 
-	int width, height;
-	struct nk_rect area;
-	
-	glfwGetWindowSize(window, &width, &height);
-	glViewport(0, 0, width, height);
-	glClear(GL_COLOR_BUFFER_BIT);
-	glClearColor(0,0,0,1);
-	area = nk_rect(0.f, 0.f, (float) width, (float) height);
-
-	nk_glfw3_render(NK_ANTI_ALIASING_ON, MAX_VERTEX_BUFFER * mul, MAX_ELEMENT_BUFFER * mul);
+	nk_glfw3_render(NK_ANTI_ALIASING_ON, MAX_VERTEX_BUFFER, MAX_ELEMENT_BUFFER);
 	glfwSwapBuffers(window);
 	glfwWaitEventsTimeout(1.0);
 }

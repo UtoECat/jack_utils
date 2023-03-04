@@ -24,6 +24,11 @@
  */
 
 /**
+ * @addtogroup jackutilsport
+ * @{
+ */
+
+/**
  * Creates new port, and returns port desriptor.
  * Jack ports are input or output points for single-channel audio data.
  *
@@ -187,4 +192,6 @@ JU_API int  ju_port_rawfind(ju_ctx_t* x, jack_port_t* p, int not_own);
  * Refcounter of port descriptor is NOT changed here!
  */
 JU_API jack_port_t* ju_port_rawget(ju_ctx_t* x, int p);
+
+/** @} */
 

@@ -17,7 +17,17 @@
 
 #pragma once
 
-/*
+/**
+ * @file ju_osc.h
+ * New Session managger support.
+ */
+
+/**
+ * @addtogroup jackutilsctx
+ * @{
+ */
+
+/**
  * Returns is GUI enabled for us.
  * If this functions returns true, then you SHOULD show your window.
  * Else you SHOULD hide it, and draw nothing.
@@ -25,32 +35,32 @@
  * If there is no session manager, returns true until ju_set_gui 
  * is not called.
  *
- * @arg context
- * @ret 1 if enabled.
+ * @param x context
+ * @return 1 if enabled.
  */
-JU_API int (ju_need_gui) (ju_ctx_t*);
+JU_API int (ju_need_gui) (ju_ctx_t* x);
 
-/*
+/**
  * Set ju_need_gui returned value and send it to session manager.
  *
  * If there is no session manager, setting this to 0 makes 
- * ju_is_online return 0 too!
+ * ju_is_online return 0 too! (=> closes your program)
  * 
- * @arg context
- * @arg show gui
+ * @param x context
+ * @param b show gui
  */
-JU_API void (ju_set_gui) (ju_ctx_t*, int);
+JU_API void (ju_set_gui) (ju_ctx_t* x, int b);
 
-/*
+/**
  * Returns information about session manager, if available.
  *
- * @arg context
- * @ret session manager info string or NULL if session manager is not available
+ * @param ctx context
+ * @return session manager info string or NULL if session manager is not available
  *
  */
 JU_API ju_cstr_t (ju_osc_info) (ju_ctx_t* ctx);
 
-/*
+/**
  * Returns OSC path to store your session data.
  * If there is no session manager, returns "~/.local/share/jackutils/"
  *
@@ -74,9 +84,38 @@ JU_API ju_cstr_t (ju_osc_info) (ju_ctx_t* ctx);
  * 		 the data stays transferable by hand to another client 
  * 		 instance (in another session).
  *
- * @arg context
- * @ret path to load and save session data
+ * @param ctx context
+ * @return path to load and save session data
  */
 JU_API ju_cstr_t (ju_osc_path) (ju_ctx_t* ctx);
 
-JU_API void (ju_pool_events) (ju_ctx_t*);
+/**
+ * Call this in main loop to recieve and process messages from session manager.
+ * @param ctx context
+ */
+JU_API void (ju_pool_events) (ju_ctx_t* ctx);
+
+/**
+ * Save callback, that called each time when user sends save command
+ * from session manager, or, in case of no session manager,
+ * on SIGTERM and at exiting Jack Audio Processing.
+ *
+ * @param ctx JackUtils Context
+ * @param ud  userdata
+ * @return 0 in case of sucessful saving data, any other number otherwise
+ * @since JackUtils 4.0
+ */
+typedef int (*ju_save_cb) (ju_ctx_t* ctx, void* ud);
+
+/**
+ * Sets custom on_save callback.
+ * @param ctx JackUtils context
+ * @param cb callback
+ * @param ud userdata passed to callback
+ * @since JackUtils 4.0
+ */
+JU_API void (ju_onsave) (ju_ctx_t* ctx, ju_save_cb cb, void* ud);
+
+/**
+ * @}
+ */

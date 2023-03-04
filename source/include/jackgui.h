@@ -17,113 +17,158 @@
 
 #pragma once
 
+/**
+ * @file jackgui.h
+ * GUI and window creation extension for JackUtils :)
+ */
+/**
+ * @defgroup jackgui JackGUI extension
+ * GUI and window creation extension for JackUtils :)
+ * All other GUI functions are provided by nuklear API. :)
+ * @ref nuklear
+ */
+
+/** */
 #define JG_API
+
 #include <ext/gl.h>
 #include <stdarg.h>
 #include <ext/nuklear.h>
 
 typedef struct nk_context jg_ctx_t;
 
-/*
+/**
  * Initializes GUI context.
- * @ret NULL in case of error
+ * @param title window title
+ * @param w default width of the window
+ * @param h default height of the window
+ * @return NULL in case of error
+ * @return GUI context on sucess
+ * @ingroup jackgui
  */
 JG_API jg_ctx_t* jg_init(const char* title, int w, int h);
 
-/*
- * Destroys GUI context
+/**
+ * Destroys GUI context.
+ * @param u GUI context
+ * @ingroup jackgui
  */
-JG_API void jg_uninit(jg_ctx_t*);
+JG_API void jg_uninit(jg_ctx_t* u);
 
-/*
+/**
  * Starts GUI objects enumeration.
  * You must call jg_end() when you done
  *
- * @ret 1 on sucess. Else you must not enumerate anything!
+ * You can use OpenG commands here ONLY before drawing any GUI element (for future compability).
+ *
+ * @param u GUI context
+ * @param fullscreen draw window on fullscreen? (if your program does not draw anything using OpenGL on the background...)
+ * @return 1 on sucess. In other case you must not enumerate anything!
+ * @ingroup jackgui
  */
-JG_API int  jg_begin(jg_ctx_t*);
-JG_API void jg_end(jg_ctx_t*, int mul);
+JG_API int  jg_begin(jg_ctx_t* u, int fullscreen);
 
-/*
- * Synchronize window visibility with Session Manager.
+/**
+ * Ends GUI objects enumeration.
+ * It combines GUI verticies and send them to OpenGL.
+ * Also pulls GLFW Window events, switches buffers, etc.
+ *
+ * @param u GUI Context
+ * @param mul **For ABI compability! Set always to zero!**
+ * @ingroup jackgui
+ */
+JG_API void jg_end(jg_ctx_t* u, int mul);
+
+/**
+ * Synchronize window visibility with Session Manager (if has one, else do nothing).
+ * @param gui GUI context
+ * @param ctx JackUtils context
+ * @ingroup jackgui
  */
 JG_API void jg_sync_visibility(jg_ctx_t* gui, ju_ctx_t* ctx);
 
 /*
- * Shows or hides window
+ * Shows or hides window.
+ * @param u GUI Context
+ * @param s Show(1) or hide(0) window?
+ * @ingroup jackgui
  */
-JG_API void jg_set_visibility(jg_ctx_t*, int);
+JG_API void jg_set_visibility(jg_ctx_t* u, int s);
 
-/*
- * Your utilities redraws only when user interacts with window.
- * This may be not enough for you. Then, you can call
- * jg_request_redraw() to make window redraws again at next tick.
+/**
+ * Sends redraw event to internal event pool.
+ *
+ * Window context redraws only user interacts with windowby default (when any event extst).
+ * This may be not enough for you, and in this case you can call this function to make redraw window again at next tick.
+ *
+ * @param u GUI context
+ * @ingroup jackgui
  */
-JG_API void jg_request_redraw(jg_ctx_t*); 
+JG_API void jg_request_redraw(jg_ctx_t* u); 
 
-/*
+/**
  * Notifies user with message. You need to call it ONCE!
- * If you call it not once, old message will be concated with new :)
- * Message will not be cleared until user not closes it :)
+ * If you call it not once, old message will be concated with new.
+ * Message will be cleared when user will close it.
+ *
+ * @param u GUI context
+ * @param msg Message to show.
+ * @ingroup jackgui
  */
-JG_API void jg_show_message(jg_ctx_t*, const char* msg);
+JG_API void jg_show_message(jg_ctx_t* u, ju_cstr_t msg);
 
-/*
- * this function called from jg_ju_bar :)
+/**
+ * Shows about subwindow with information about your program.
+ *
+ * @param u GUI Context
+ * @ingroup jackgui
  */
-JG_API void jg_show_about(jg_ctx_t*);
+JG_API void jg_show_about(jg_ctx_t*u);
 
-/*
- * All other GUI functions are provided by nuklear API. :)
- */
-
-// custom widgets :)
-
-struct waveinfo {
-	float min, max;
-	float x, y, sx, sy;
-};
-
-struct waveinfo waveinfo_default();
-void jg_waveview(jg_ctx_t* ctx, float* arr, size_t len, struct waveinfo*);
-
-/*
- * Float whell widget.
- */
-int jg_whell_float(jg_ctx_t* ctx, float* value, float min, float step, float max);
-
-/*
- * Custom top-level jackutils bar :)
- */
-struct jg_bar_item {
-	void (*cb_draw) (jg_ctx_t*, struct jg_bar_item*);
-	union {
-		void* p;
-	 	int i;
-		float n;	
-	}	data[5];
-	int width;
-	const char* desc;
-};
-
-struct jg_bar_item jg_float_item(const char* desc, float* val, float min, float step, float max);
-struct jg_bar_item jg_text_item(const char* desc, const char* text, int w);
-struct jg_bar_item jg_null_item();
-
-int jg_ju_topbar(jg_ctx_t* ctx, ju_ctx_t* cli, struct jg_bar_item* arr);
-
-/*
- * Image load/free functions.
+/**
+ * Nuklear Image load function.
  *
  * WARNING! Creating image from same texture will generate NEW IMAGE in gpu!
  * Also, there is no way to reference count this images :(
- * So, be careful, and create images before main loop, and free after
+ * So, be careful, and create images before main loop, and free after.
+ *
+ * @param ptr pointer to the raw image
+ * @param w width
+ * @param h height
+ * @param channels count of channels (1 ... 4)
  */
-
 JG_API struct nk_image jg_image_load_from_memory(const unsigned char *ptr, int w, int h, int channels);
+
+/**
+ * Frees nuklear image.
+ * @param img nuklear image
+ * @see jg_image_load_from_memory()
+ */
 JG_API void jg_image_free(struct nk_image img);
 
-/*
- * Returns constant jackutils icon.
+/**
+ * @returns constant jackutils icon.
  */
 JG_API struct nk_image jg_jackutils_icon(void);
+
+/**
+ * @defgroup customwidgets Custom JackGUI widgets
+ * @ref jackgui :)
+ * @{
+ */
+
+/**
+ * Float whell widget.
+ */
+float jg_whell_float(jg_ctx_t* ctx, float value, float min, float max);
+
+/**
+ * JackUtils Classic GUI topbar.
+ * Shows info about jhack, session manager, about window, etc.
+ *
+ * @param u JackGUI context
+ * @param j JACKUTILS context
+ */
+JG_API void jg_jackutils_topbar(jg_ctx_t* u, ju_ctx_t* j);
+
+/**@}*/

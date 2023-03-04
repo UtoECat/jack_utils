@@ -42,8 +42,15 @@ static int cb_open (const char *session_path, const char*, const char *new_name,
 
 static int cb_save (char**, void* ud) {
 	ju_ctx_t* p = ((ju_ctx_t*)ud);
-	fprintf(stderr, "JACKUTILS: session manager stops us...\n");
-	ju_stop(p);
+	//fprintf(stderr, "JACKUTILS: session manager stops us...\n");
+	//ju_stop(p);
+	if (p->onsave) {
+		mtx_lock(&p->mdata);
+		ju_save_cb f = p->onsave;
+		void* ud = p->onsave_ud;
+		mtx_unlock(&p->mdata);
+		return f(p, ud);
+	}
 	return ERR_OK;
 }
 
@@ -81,9 +88,10 @@ int ju_internal_try_osc(ju_ctx_t* p, const char** name, const char* argv0, int h
 			if (has_gui == 1) nsm_send_is_shown(p->osc);
 			fprintf(stderr, "JACKUTILS : GUI is supported!\n");
 		}
+		fprintf(stderr, "JACKUTILS : Session path is %s!\n", p->session_path);
 	} else {
 		fail :
-		fprintf(stderr, "JACKUTILS : Can't connect to session manager!\n");
+		fprintf(stderr, "JACKUTILS : Can't connect to the session manager!\n");
 		return 0; // unsucessfully
 	}
 }
@@ -100,11 +108,7 @@ void ju_internal_free_osc(ju_ctx_t* p) {
 	if (p->tmp) free(p->tmp);
 }
 
-/*
- * Returns is GUI enabled for us.
- * @arg context
- * @ret 1 if enabled.
- */
+
 JU_API int (ju_need_gui) (ju_ctx_t* p) {
 	mtx_lock(&p->mdata);
 	int v = p->gui_showed;
@@ -112,11 +116,6 @@ JU_API int (ju_need_gui) (ju_ctx_t* p) {
 	return v;
 }
 
-/*
- * Set ju_need_gui returned value and send it to session manager.
- * @arg context
- * @arg show gui
- */
 #include <assert.h>
 JU_API void (ju_set_gui) (ju_ctx_t* p, int new) {
 	new = !!new;
@@ -128,33 +127,19 @@ JU_API void (ju_set_gui) (ju_ctx_t* p, int new) {
 	if (new == old) return;
 	if (new) {
 		assert(p->osc != NULL); // emmm... what are you doing? :D
-		fprintf(stderr, "JACKUTILS : Send that we are shown!\n");
 		nsm_send_is_shown(p->osc);
 	} else {
 		if (p->osc) {
-			fprintf(stderr, "JACKUTILS : Send that we are hidden!\n");
 			nsm_send_is_hidden(p->osc);
 		} else ju_stop(p);
 	}
 	return;
 }
 
-/*
- * Returns information about session manager, if available.
- * @arg context
- * @ret session manager info string or NULL if session manager is not available
- *
- */
 JU_API ju_cstr_t (ju_osc_info) (ju_ctx_t* ctx) {
 	return ctx->osc ? nsm_get_session_manager_name(ctx->osc) : NULL;
 }
 
-/*
- * Returns OSC path to store your session data.
- * If there is no session manager, returns "~/.local/share/jackutils/"
- * @arg context
- * @ret path to load and save session data
- */
 JU_API ju_cstr_t (ju_osc_path) (ju_ctx_t* ctx) {
 	return ctx->osc ? ctx->session_path : "~/.local/share/jackutils/";
 }
@@ -162,4 +147,13 @@ JU_API ju_cstr_t (ju_osc_path) (ju_ctx_t* ctx) {
 JU_API void ju_pool_events(ju_ctx_t* ctx) {
 	if (!ctx || !ctx->osc) return;
 	nsm_check_nowait(ctx->osc);
+}
+
+// save callback setting :)
+JU_API void (ju_onsave) (ju_ctx_t* ctx, ju_save_cb cb, void* ud) {
+	if (!ctx) return;
+	mtx_lock(&ctx->mdata);
+	ctx->onsave    = cb;
+	ctx->onsave_ud = ud;
+	mtx_unlock(&ctx->mdata);
 }

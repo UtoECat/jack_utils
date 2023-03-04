@@ -30,6 +30,11 @@
 #include <threads.h>
 
 /**
+ * @defgroup jackutilsbuff Jack Utils FIFO Buffer API
+ * @{
+ */
+
+/**
  * typedef wrapper around buffer structure
  */
 typedef struct ju_buff_s ju_buff_t; 
@@ -170,7 +175,7 @@ JBU_API size_t (ju_buff_write)(ju_buff_t*, int fd, size_t);
 
 /**
  * Returns buffer data from the beginning
- * @param buffer
+ * @param b buffer
  * @return pointer on the data at the beginning of the buffer
  */
 JBU_API void*  (ju_buff_data)(ju_buff_t* b);
@@ -187,9 +192,11 @@ JBU_API void*  (ju_buff_data)(ju_buff_t* b);
  */
 JBU_API void   (ju_buff_lock)(ju_buff_t* b);
 
-/*
+/**
  * Unlocks buffer. 
  * @param b buffer
  */
 JBU_API void   (ju_buff_unlock)(ju_buff_t* b);
+
+/** @} */
 

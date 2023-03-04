@@ -9,6 +9,11 @@
  * Contains functions for context creation and manipulation. Part of the JackUtils API.
  */
 
+/**
+ * @addtogroup jackutilsctx
+ * @{
+ */
+
 /** 
  * Allocates and Initializes jackutils context structure. 
  * Connection with the session manager will be establilshed in this function too!
@@ -95,4 +100,6 @@ JU_API  jack_nframes_t (ju_samplerate) (ju_ctx_t* x);
  * @return 1 if Jack Audio Processing is still works
  */
 JU_API int (ju_is_online) (ju_ctx_t* x, int t); 
+
+/** @} */
 

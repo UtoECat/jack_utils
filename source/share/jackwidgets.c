@@ -59,9 +59,6 @@ NK_API void nk_fill_rect(struct nk_command_buffer*, struct nk_rect, float roundi
 ///     nk_layout_row_end(&ctx);
 */
 
-struct waveinfo waveinfo_default() {
-	return (struct waveinfo){-1, 1, 0, 0, 1, 1};
-}
 
 #define BG_CELL_MIN_INDEXIES 50
 #define BG_CELL_MIN_PIXELS   50
@@ -100,67 +97,6 @@ static inline float limitf(float v, float min, float max) {
 	return v;
 }
 
-void jg_waveview(jg_ctx_t* ctx, float* arr, size_t sz, struct waveinfo* info) {
-	if (!ctx || !arr || !sz || !info || info->max < info->min) return;
-
-	// try to get get all important data
-	struct nk_command_buffer *canvas;
-	struct nk_input *input;
-	struct nk_rect space;
-	if (!jg_check_and_get(ctx, &canvas, &input, &space)) return;
-
-	if (input) {/* TODO: what to do here? */}
-
-	// fill background
-	nk_fill_rect(canvas, space, 0, nk_rgb(0, 0, 0));
-	// calculate important values
-	float width = space.w, height = space.h;
-	float range = info->max - info->min;
-	// now fill background cells
-	for (int i = 0; i < width; i += BG_CELL_MIN_PIXELS) {
-		nk_stroke_line(canvas, space.x + i, space.y, space.x + i, space.y +space.h, 1, BG_CELL_COLOR);
-	}
-	for (int i = 0; i < height; i += BG_CELL_MIN_PIXELS) {
-		nk_stroke_line(canvas, space.x, space.y + i, space.x + space.w, space.y + i, 1, BG_CELL_COLOR);
-	}
-	// new optimized drawing algo
-
-	// get first vertex
-	size_t oldindx = 0;
-	float oldx = space.x;
-	float oldmax = arr[0];
-	float step = width/(float)sz;
-	if (step < 1.0) step = 1.0;
-
-	for (float i = 1; i < width; i += step) { // optimitsation
-		size_t indx = i/width * sz;
-		float x = i + space.x;
-
-		// minimal and maximum values in current values range
-		float maxv;
-		getlimarr(arr + oldindx, indx - oldindx, &maxv);
-		maxv = limitf(maxv, info->min, info->max);
-		// setup points
-		float y1 = space.y + height - (maxv - info->min)/range * height;
-		float y2 = space.y + height - (oldmax - info->min)/range * height;
-		nk_stroke_line(canvas, oldx, y2, x, y1, 1, FG_LINE_COLOR);
-		oldindx = indx;
-		oldmax = maxv;
-		oldx = x;
-	}
-
-	/*
-	// and draw all other
-	for (size_t i = 1; i < sz; i++) {
-		float x = (i / (float)sz) * width + space.x;
-		float v = arr[i] > info->min ? (arr[i] < info->max ? arr[i] : info->max) : info->min;
-		float y = space.y + height - (v - info->min)/range * height;
-		nk_stroke_line(canvas, oldx, oldy, x, y, 2, FG_LINE_COLOR);
-		oldx = x; oldy = y;
-	}*/
-	return; // success
-}
-
 #include <math.h>
 
 static float vec2length(struct nk_vec2 vec) {
@@ -196,23 +132,20 @@ static float calcposon(struct nk_vec2 pos, struct nk_vec2 center) {
 
 /*
  * FLoat value whell.
- * Returns 1 if whell was scrolled
  */
-int jg_whell_float(jg_ctx_t* ctx, float* value, float min, float step, float max) {
-	if (!ctx || !value || step <= 0.0 || min > max) return 0;
+float jg_whell_float(jg_ctx_t* ctx, float value, float min, float max) {
+	if (!ctx || min >= max) return value;
 
 	// try to get get all important data
 	struct nk_command_buffer *canvas;
 	struct nk_input *input;
 	struct nk_rect bounds;
-	if (!jg_check_and_get(ctx, &canvas, &input, &bounds)) return 0;
-
-	//style = &ctx->style; // `style->slider
-	float old_value = *value;
+	if (!jg_check_and_get(ctx, &canvas, &input, &bounds)) return value;
 
 	float  radius = DIRTY_MIN(bounds.w/2.0f, bounds.h/2.0f);
 	struct nk_vec2 center = {bounds.x+bounds.w/2.0, bounds.y+bounds.h/2.0};
 	int himouse = 0;
+	float step = (max - min)/1000.0f;
 
 	if (input) {
 		struct nk_vec2 mdiff = {
@@ -229,15 +162,15 @@ int jg_whell_float(jg_ctx_t* ctx, float* value, float min, float step, float max
 				v0 = v0*(max - min) + min;
 				v1 = v1 / (3.1415 * 1.5) - 3.1415 * 0.25;
 				v1 = v1*(max - min) + min;
-				*value += v1 - v0; // add difference
+				value += v1 - v0; // add difference
 			} else { // move whell using.. mouse whell! :D
-				*value += input->mouse.scroll_delta.y * step/max;
+				value += input->mouse.scroll_delta.y * step/max;
 			}
 			himouse = 1;
 		}
 		// check is in bounds
-		if (*value < min) *value = min;
-		if (*value > max) *value = max;
+		if (value < min) value = min;
+		if (value > max) value = max;
 	}
 
 	// draw whell
@@ -254,7 +187,7 @@ int jg_whell_float(jg_ctx_t* ctx, float* value, float min, float step, float max
 	nk_fill_circle(canvas, circle, col);
 	nk_stroke_circle(canvas, circle, 2, nk_rgb(26, 26, 26));
 
-	float path = (*value - min)/max * 3.1415 * 1.5 + 3.1415 * 0.25;
+	float path = (value - min)/max * 3.1415 * 1.5 + 3.1415 * 0.25;
 	float kx   = sinf(path) * radius;
 	float ky   = cosf(path) * radius;
 
@@ -270,8 +203,7 @@ int jg_whell_float(jg_ctx_t* ctx, float* value, float min, float step, float max
 			bounds.x, bounds.y + bounds.h,
 			bounds.x + bounds.w, bounds.y + bounds.h,
 			4, nk_rgb(32,32,32));
-	// if value is changed
-	return (old_value > *value || old_value < *value);
+	return value;
 }
 
 /* Chart implementation :
@@ -287,89 +219,120 @@ int jg_whell_float(jg_ctx_t* ctx, float* value, float min, float step, float max
         g->slots[slot].index += 1;
         return ret; */
 
-/*
- * Custom top-level jackutils bar :)
- */
+// yes...
+// easy one...
+// maybe
 
-#define arr_foreach(arr) for (struct jg_bar_item* pos = arr; pos->cb_draw != NULL; pos++)
+static void render_push (jg_ctx_t* u, float r) {
+	if (r >= 0) nk_layout_row_template_push_static(u, r);
+	else nk_layout_row_template_push_variable(u, r);
+}
 
-int jg_ju_topbar(jg_ctx_t* gui, ju_ctx_t* cli, struct jg_bar_item* arr) {
-	if (!arr || !gui || !cli) return 0;
+JU_API int ju_vars_draw(jg_ctx_t* u, ju_var_t* vararr, int eh) {
+	nk_layout_row_dynamic(u, eh + 33, 1);
+	if (nk_group_begin(u, "random", 0)) {
 
-	nk_layout_row_begin(gui, NK_STATIC, 72, 2);
-	nk_layout_row_push(gui, 72);
+		// setup template at first
+		nk_layout_row_template_begin(u, eh);
+		ju_var_t* v = vararr;
+		for (;v->_vp != NULL; v++) {
+			render_push(u, v->_vp->widthratio * (float)eh);
+		}
+		nk_layout_row_template_end(u);
+
+		// draw elements
+		v = vararr;
+		for (;v->_vp != NULL; v++) {
+			v->_vp->render(u, v);
+		}
+		
+		// setup template for names
+		nk_layout_row_template_begin(u, 10);
+		v = vararr;
+		for (;v->_vp != NULL; v++) {
+			render_push(u, v->_vp->widthratio * (float)eh);
+		}
+		nk_layout_row_template_end(u);
+
+		// draw variables names
+		v = vararr;
+		for (;v->_vp != NULL; v++) {
+			nk_label(u, v->name, NK_TEXT_CENTERED);
+		}
+	}
+	nk_group_end(u);
+	return 0;
+}
+
+JG_API void jg_jackutils_topbar(jg_ctx_t* gui, ju_ctx_t* cli) {
+	if (!gui || !cli) return;
+
+	nk_layout_row_begin(gui, NK_STATIC, 65, 2);
+	nk_layout_row_push(gui, 65);
 	nk_image(gui, jg_jackutils_icon());
-	nk_layout_row_push(gui, nk_window_get_content_region(gui).w - 72 - 12);
+	nk_layout_row_push(gui, nk_window_get_content_region(gui).w - 65 - 12);
 	// top group after icon
 	nk_group_begin(gui, "top-group", 0);
 		// setup template layout
-		nk_layout_row_template_begin(gui, 40);
-		nk_layout_row_template_push_variable(gui, 80);
-		arr_foreach(arr) {	
-			nk_layout_row_template_push_static(gui, pos->width);
-		}
+		nk_layout_row_template_begin(gui, 25);
+		nk_layout_row_template_push_variable(gui, 40);
 		nk_layout_row_template_push_static(gui, 80);
 		nk_layout_row_template_end(gui);
-			// first layer
-			nk_labelf(gui, NK_TEXT_CENTERED, "(Jackutils) : %s", program_info.name);
-			arr_foreach(arr) {	
-				pos->cb_draw(gui, pos);
-			}
-			if (nk_button_label(gui, "About")) {
-				jg_show_about(gui);
-			};
-			// second layout
-			nk_layout_row_template_begin(gui, 10);
-			nk_layout_row_template_push_variable(gui, 80);
-			arr_foreach(arr) {	
-				nk_layout_row_template_push_static(gui, pos->width);
-			}
-			nk_layout_row_template_push_static(gui, 80);
-			nk_layout_row_template_end(gui);
-			// second layer
-			if (ju_is_online(cli, 0))
-			nk_labelf(gui, NK_TEXT_CENTERED, "Jack : [%s, length=%li]", ju_jack_info(), ju_length(cli));
-			else nk_label(gui, "Jack : OFFLINE!", NK_TEXT_CENTERED);
-			arr_foreach(arr) {
-				nk_label(gui, pos->desc, NK_TEXT_CENTERED);
-			}
-			nk_labelf(gui, NK_TEXT_CENTERED, "v.%0.1f", program_info.version);
-		nk_group_end(gui);
+
+		nk_labelf(gui, NK_TEXT_CENTERED, "(Jackutils) : %s", program_info.name);
+		if (nk_button_label(gui, "About")) {
+			jg_show_about(gui);
+		};
+
+		// second layout
+		nk_layout_row_template_begin(gui, 10);
+		nk_layout_row_template_push_variable(gui, 40);
+		nk_layout_row_template_push_static(gui, 80);
+		nk_layout_row_template_end(gui);
+		// second layer
+		if (ju_is_online(cli, 0))
+			nk_labelf(gui, NK_TEXT_CENTERED, "JACK : [%s, length=%li]", ju_jack_info(), ju_length(cli));
+		else 
+			nk_label(gui, "Jack : OFFLINE!", NK_TEXT_CENTERED);
+		nk_labelf(gui, NK_TEXT_CENTERED, "v.%0.1f", program_info.version);
+	nk_group_end(gui);
 	nk_layout_row_end(gui);
-	return 0;
-}
-#undef arr_foreach
-
-struct jg_bar_item jg_null_item() {
-	return (struct jg_bar_item){NULL, {NULL}, 0, NULL};
+	return;
 }
 
-static void cb_float(jg_ctx_t* gui, struct jg_bar_item* i) {
-	jg_whell_float(gui, (float*)i->data[0].p, i->data[1].n, i->data[2].n, i->data[3].n);
+/*
+ * Variables rendering implementations
+ */
+
+JU_API void ju_vars_lock();
+JU_API void ju_vars_unlock();
+
+void __render_frw(jg_ctx_t* gui, ju_var_t* i) {
+	ju_vars_lock();
+	float oldval = *((float*)i->data[0].p);
+	ju_vars_unlock();
+	float newval = jg_whell_float(gui, oldval, i->data[1].f, i->data[2].f);
+	if (newval != oldval) {
+		ju_vars_lock();
+		*((float*)i->data[0].p) = newval;
+		ju_vars_unlock();
+	}
 }
 
-struct jg_bar_item jg_float_item(const char* desc, float* val, float min, float step, float max) {
-	struct jg_bar_item i = jg_null_item();
-	i.cb_draw = cb_float;
-	i.data[0].p = val;
-	i.data[1].n = min;
-	i.data[2].n = step;
-	i.data[3].n = max;
-	i.width = 45;
-	i.desc = desc ? desc : "(null)";
-	return i;
+void __render_fro (jg_ctx_t* gui, ju_var_t* i) {
+	ju_vars_lock();
+	float val = *((float*)i->data[0].p);
+	ju_vars_unlock();
+	char buff[64];
+	snprintf(buff, 63, "%f", val);
+	nk_label(gui, buff, NK_TEXT_CENTERED);
 }
 
-static void cb_text(jg_ctx_t* gui, struct jg_bar_item* i) {
-	nk_label(gui, (char*)i->data[0].p, NK_TEXT_CENTERED);
+void __render_ctxt(jg_ctx_t* gui, ju_var_t* i) {
+	ju_vars_lock();
+	const char* str = *((char**)i->data[0].p);
+	ju_vars_unlock();
+	nk_label(gui, str, NK_TEXT_CENTERED);
 }
 
-struct jg_bar_item jg_text_item(const char* desc, const char* text, int w) {
-	struct jg_bar_item i = jg_null_item();
-	i.cb_draw = cb_text;
-	i.data[0].p = text;
-	i.width = w;
-	i.desc = desc ? desc : "(null)";
-	return i;
-}
 

@@ -55,7 +55,7 @@ JU_API int ju_port_rawfind(ju_ctx_t* x, jack_port_t* p, int b) {
 
 //jack_port_by_id
 
-JU_API int  ju_port_open (ju_ctx_t* x, ju_cstr_t n, int mode, int f) {
+JU_API int  ju_port_open (ju_ctx_t* x, ju_cstr_t n, enum ju_port_type mode, int f) {
 	if (mode != JU_INPUT && mode != JU_OUTPUT) return -1;
 	jack_port_t* p = jack_port_register(x->client,
 		n, JACK_DEFAULT_AUDIO_TYPE,
@@ -102,7 +102,7 @@ JU_API int ju_port_find(ju_ctx_t* x, ju_cstr_t s) {
 	return i;
 }
 
-JU_API int ju_port_next(ju_ctx_t* x, int p, int t) {
+JU_API int ju_port_next(ju_ctx_t* x, int p, enum ju_port_type t) {
 	if (p < -1 || p > x->last_port || !x->ports[p].port) return -1; // allow -1 here
 	if (p != -1) ju_port_close(x, p); // close current port
 	do {

@@ -17,39 +17,47 @@
  */
 
 #include <jackutils.h>
-#include <jackgui.h>
+#include <ext/gl.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include "about.h"
 
 static int port = 0;
 static ju_buff_t buff;
-static float volume = 1.0f;
+
+// variable is not used in process function LOL
+static float var_volume = 1.0f;
+static ju_var_t variables[2];
 
 static void process(ju_ctx_t* ctx, size_t len) {
 	ju_buff_lock(&buff);
-	ju_buff_resize(&buff, len*sizeof(float));
+	ju_buff_check_size(&buff, len*sizeof(float));
 	ju_buff_append(&buff, ju_port_read(ctx, port), len*sizeof(float));
 	ju_buff_unlock(&buff);
 }
 
-static void loop(ju_ctx_t* ctx, jg_ctx_t* gui);
-struct jg_bar_item bar_items[2];
+static void draw(ju_ctx_t* ctx, jg_ctx_t* gui);
 
 int main(int, char** argv) {
-	ju_ctx_t* ctx = ju_ctx_init(program_info.name, argv[0], 1); // init jackutils
+	// init jackutils
+	ju_ctx_t* ctx = ju_ctx_init(program_info.name, argv[0], 1);
 	port = ju_port_open(ctx, "input", JU_INPUT, 0);
 	// init gui
 	jg_ctx_t* gui = jg_init(ju_get_name(ctx), 640, 480);
-	bar_items[0] = jg_float_item("volume", &volume, 0.01, 0.01, 2.0);
-	bar_items[1] = jg_null_item();
+	// init variables
+	variables[1] = ju_var_nil();
+	variables[0] = ju_var_float_rw("volume", &var_volume, 0.01, 1.5);
 	// init buffer
 	ju_buff_init(&buff, ju_length(ctx) * sizeof(float));
-	ju_start(ctx, process); // start jack
+	// start audio processing
+	ju_start(ctx, process); 
+
 	while (ju_is_online(ctx, 0)) {
-		if (jg_begin(gui)) {
-			jg_ju_topbar(gui, ctx, bar_items);
-			loop(ctx, gui);
+		if (jg_begin(gui, 0)) {
+			// custom openGL drawning at first - for future compability!
+			draw(ctx, gui);
+			jg_jackutils_topbar(gui, ctx);
+			ju_vars_draw(gui, variables, 40);
 		}
 		jg_end(gui, 1);
 		jg_sync_visibility(gui, ctx);
@@ -60,7 +68,7 @@ int main(int, char** argv) {
 	ju_buff_uninit(&buff);
 }
 
-static void loop(ju_ctx_t* ctx, jg_ctx_t* gui) {
+static void draw(ju_ctx_t* ctx, jg_ctx_t* gui) {
 	// get data
 	ju_buff_lock(&buff);
 	size_t sz = ju_buff_size(&buff) / sizeof(float);
@@ -68,9 +76,14 @@ static void loop(ju_ctx_t* ctx, jg_ctx_t* gui) {
 	memcpy(tmp, ju_buff_data(&buff), sizeof(float) * sz);
 	ju_buff_unlock(&buff);
 
-	struct waveinfo info = {-1 / volume, 1 / volume, 0, 0, 1, 1};
-	nk_layout_row_dynamic(gui, nk_window_get_content_region(gui).h - 72 - 12, 1);
-	jg_waveview(gui, tmp, sz, &info);
+	glColor3f(0.5, 1.0, 0.8);
+	glLineWidth(2.0f);
+
+	glBegin(GL_LINE_STRIP);
+	for (size_t i = 0; i < sz; i++) {
+		glVertex2f((i/(float)sz * 2.0f) - 1.0f, tmp[i] * var_volume);
+	};
+	glEnd();
 
 	// request screen refresh	
 	if (ju_port_connected(ctx, port))

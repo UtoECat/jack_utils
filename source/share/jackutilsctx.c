@@ -148,7 +148,10 @@ JU_API int  (ju_start) (ju_ctx_t* x, ju_process_func_t f) {
 
 JU_API void (ju_stop)  (ju_ctx_t* x) {
 	int i = mtx_trylock(&x->works);
-	if (i != 0) jack_deactivate(x->client); // if working 
+	if (i != 0) { // if working
+		jack_deactivate(x->client);
+		if (x->onsave && !x->osc) x->onsave(x, x->onsave_ud);
+	}
 	else error_cb("Can't stop client processing!", i);
 	mtx_unlock(&x->works);
 }

@@ -36,12 +36,14 @@
 
 /**
  * Signed size type.
+ * @ingroup jackutils
  */
 typedef signed long ju_ssize_t;
 
 /**
  * Structure required for custom cllients, that uses jackutils!
  * It provides libjackutils with general information about your program.
+ * @ingroup jackutils
  */
 struct program_info {
 	const char* name; /**< Name of your program. */
@@ -53,4 +55,6 @@ struct program_info {
 	const char* source_url;  /**< Url to your project page, github, etc. */
 };
 
-extern const struct program_info program_info; /**< to make it simply acessable from ANYWHERE :D */
+extern const struct program_info program_info; /**< to make it simply acessable from ANYWHERE :D 
+* @ingroup jackutils
+*/

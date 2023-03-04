@@ -1,3 +1,8 @@
+/**
+ * @file nuklear.h
+ * Nuklear :D
+ */
+
 #define NK_INCLUDE_FIXED_TYPES
 #define NK_INCLUDE_STANDARD_IO
 #define NK_INCLUDE_STANDARD_VARARGS

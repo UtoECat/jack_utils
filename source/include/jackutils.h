@@ -29,21 +29,49 @@
 #define JU_API
 #define JU_PROC
 
-#define JU_MAX_PORTS 127 /**< max ports descriptors count. */
+/**
+ * @defgroup jackutilsport Jack Utils Ports API
+ */
+/**
+ * @defgroup jackutilsctx  Jack Utils Context manipulation API
+ */
+/**
+ * @defgroup jackutils Jack Utils Common API definitions
+ */
+/**
+ * @defgroup jackutilslowlevel Jack Utils Internal Lowlevel API.
+ * Useful for jackutils developers only! DO NOT USE THIS FUNCTIONS IN YOUR UTILITIES!
+ */
+
+#define JU_MAX_PORTS 127 /**< max ports descriptors count.
+* @ingroup jackutils
+*/
 
 /**
  * Enum of all available port types.
  * Port types cannot be mixed!
+ * @ingroup jackutils
  */
 enum ju_port_type {
 	JU_INPUT  = 1, /**< Input port type. Port recieves audio data. */
 	JU_OUTPUT = 2 /**< Output port type. Port returns audio data. */
 };
 
-typedef unsigned char ju_uint8_t; /**< Unsigned int definition... */
-typedef const char*   ju_cstr_t; /**< Informative type definition. C String type. */
-typedef jack_default_audio_sample_t ju_sample_t; /**< Sample type. Typically it is float, but not predict it! Depends on definition in jack/jack.h file! */
-typedef struct ju_ctx_s ju_ctx_t; /**< Typedef wrapper around internal JackUtils Context structure. */
+typedef unsigned char ju_uint8_t; /**< Unsigned int definition...
+* @ingroup jackutils
+*/
+
+typedef const char*   ju_cstr_t; /**< Informative type definition. C String type.
+* @ingroup jackutils
+*/
+
+typedef jack_default_audio_sample_t ju_sample_t; /**< Sample type. Typically it is float, but not predict it! Depends on definition in jack/jack.h file! 
+* @ingroup jackutils
+*/
+
+typedef struct ju_ctx_s ju_ctx_t; /**< Typedef wrapper around internal JackUtils Context structure.
+* @ingroup jackutils
+*/
 
 #include <ju_buffer.h>
 
@@ -59,6 +87,7 @@ typedef struct ju_ctx_s ju_ctx_t; /**< Typedef wrapper around internal JackUtils
  * @param s length of sample arrays (same as ju_length())
  * @see ju_start()
  * @return void
+ * @ingroup jackutils
  */
 typedef void (*ju_process_func_t) (ju_ctx_t* x, size_t s);
 
@@ -68,16 +97,18 @@ typedef void (*ju_process_func_t) (ju_ctx_t* x, size_t s);
  *
  * @param p userdata
  * @param x destination sample array
- * @param count of elements callback need to write
+ * @param s count of elements callback need to write
  * @return count of written elements
  *
  * If callback returns less data, than required, it will be called again.
  * If callback returns 0, it will not be called again! (means End of data)
  * WARNING: writing data out of bounds is Undefined Behaviour.
  * Pro Tip : This callback may be used as audio generator :)
+ * @ingroup jackutils
  */
 typedef size_t (ju_stream_func_t)(void* p, ju_sample_t* x, size_t s);
 
 #include <ju_context.h>
 #include <ju_port.h>
 #include <ju_osc.h>
+#include <ju_vars.h>

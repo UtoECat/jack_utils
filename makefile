@@ -26,7 +26,7 @@ OUTPUT_DIR   := $(realpath ./bin)
 BUILD_DIR    := $(realpath .)/build
 INCLUDE_DIR  := $(realpath ./source/include)
 
-UNIFLAGS     ?= -O2 -fsanitize=undefined -Wall -Wextra
+UNIFLAGS     ?= -O0 -fsanitize=undefined -Wall -Wextra
 CCFLAGS      ?= -std=gnu17 -MMD -MP
 
 CNUL = \033[0m

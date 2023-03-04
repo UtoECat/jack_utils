@@ -21,6 +21,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#warning deprecated file!
+
 #define JA_API static inline
 
 #ifndef PROGRAM_NAME
@@ -39,7 +41,9 @@
 #define PROGRAM_HELP "help is not defined!"
 #endif
 
-// optarg - where argument is placed
+/**
+ * @deprecated don't use this in new programs!
+ */
 JA_API void ja_parse(int argc, char* const* argv, void (*cb) (char, const char*), const char* e) {
 	if (!cb && e) return;
 	char c = 0;

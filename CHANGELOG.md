@@ -8,3 +8,6 @@
 - added New Session Manager (any OSC) support
 - **breaked compability with old clients** : `ju_ctx_init()` arguments changed!
 
+03 05 2023 :
+- I hate github actions!
+- New 

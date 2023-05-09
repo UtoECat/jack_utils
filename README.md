@@ -1,3 +1,7 @@
+# WARNING
+This rep is no longer maintained and developed.
+Use DSSI, CLAP, LADSPA or any other audio plugin API.
+
 # About JackUtils
 ## jackutils - what is this?
 Jackutils is a library and a set of useful utilities for the JACK. The library implements a simple api for managing connected ports using descriptors, connecting and checking whether the jack server is working, setuping and estabilishing connection with session manager, opening a glfw window and gui(powered by nuklear). 
